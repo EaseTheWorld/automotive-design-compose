@@ -86,7 +86,10 @@ abstract class CargoBuildTask : DefaultTask() {
         // the standard install location
         cargoBin.set(
             cargoExtension.cargoBin.orElse(
-                project.providers.systemProperty("user.home").map { File(it, ".cargo/bin/cargo") }
+                project.providers.systemProperty("user.home").map {
+                    val binaryName = if (Os.isFamily(Os.FAMILY_WINDOWS)) "cargo.exe" else "cargo"
+                    File(it, ".cargo/bin/$binaryName")
+                }
             )
         )
         rustSrcs.setFrom(cargoExtension.crateDir.filter { !it.asFile.path.startsWith("target") })

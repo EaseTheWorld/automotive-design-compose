@@ -60,13 +60,16 @@ data class Toolchain(
     private val binDir
         get() = File(ndkDirectory, "toolchains/llvm/prebuilt/$hostOS/bin")
 
+    private val isWindows
+        get() = hostOS.startsWith("windows")
+
     // The C compiler for this toolchain (also the linker)
     val cc
-        get() = File(binDir, "${compilerTriple}$compileApi-clang")
+        get() = File(binDir, "${compilerTriple}$compileApi-clang" + if (isWindows) ".cmd" else "")
 
     // The archiver for this toolchain
     val ar
-        get() = File(binDir, "llvm-ar")
+        get() = File(binDir, if (isWindows) "llvm-ar.exe" else "llvm-ar")
 
     // The name of the environment variable that sets the path to the Linker
     val linkerEnvName
