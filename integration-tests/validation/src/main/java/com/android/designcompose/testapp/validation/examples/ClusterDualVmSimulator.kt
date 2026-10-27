@@ -158,9 +158,6 @@ fun ClusterDualVmSimulator() {
             blinkerRight = !blinkerTick,
         )
 
-    val telemetryKey =
-        "${speedInt}_${rpmInt}_${batteryPct}_${blinkerTick}_${iviVmState}_${darkThemeMode}_${brandModeIndex}"
-
     val currentBrand = brandModes[brandModeIndex % brandModes.size]
     val currentSize = sizeModes[brandModeIndex % sizeModes.size]
     val themeName = if (darkThemeMode) "Dark" else "Light"
@@ -276,7 +273,6 @@ fun ClusterDualVmSimulator() {
                             telemetry = telemetryState,
                             harVariant = harVariant,
                             wrapperVariant = wrapperVariant,
-                            stateKey = telemetryKey,
                             modifier =
                                 Modifier.requiredSize(1920.dp, 720.dp).graphicsLayer {
                                     scaleX = scale

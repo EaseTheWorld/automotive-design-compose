@@ -49,26 +49,12 @@ fun HarSafetyStage(
     telemetry: HarTelemetryState,
     harVariant: ClusterHARVariant.HarVariant,
     wrapperVariant: ClusterHARVariant.WrapperVariant,
-    stateKey: String,
     modifier: Modifier = Modifier,
 ) {
-    ClusterHARUIDoc.harMain(
+    ClusterHARUIDoc.harStage(
         modifier = modifier,
-        key = stateKey,
-        harUi = { ctx ->
-            ClusterHARUIDoc.harUi(
-                modifier = ctx.layoutModifier,
-                key = stateKey,
-                harVariant = harVariant,
-            )
-        },
-        harUiWrapper = { ctx ->
-            ClusterHARUIDoc.harUiWrapper(
-                modifier = ctx.layoutModifier,
-                key = stateKey,
-                wrapperVariant = wrapperVariant,
-            )
-        },
+        harVariant = harVariant,
+        wrapperVariant = wrapperVariant,
         speed = telemetry.speedMph.toString(),
         speedGauge = telemetry.speedArcPercent,
         speedNeedle = telemetry.speedArcPercent,

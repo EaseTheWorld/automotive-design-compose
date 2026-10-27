@@ -107,6 +107,39 @@ interface ClusterHARUI {
         @DesignVariant(property = "#wrapper-variant")
         wrapperVariant: ClusterHARVariant.WrapperVariant
     )
+
+    @DesignComponent(node = "#HAR-stage")
+    fun harStage(
+        @DesignVariant(property = "#har-variant") harVariant: ClusterHARVariant.HarVariant,
+        @DesignVariant(property = "#wrapper-variant")
+        wrapperVariant: ClusterHARVariant.WrapperVariant,
+        @Design(node = "#driving/speed") speed: String,
+        @Design(node = "#driving/speedo-gauge") speedGauge: Meter,
+        @Design(node = "#driving/needle") speedNeedle: Meter,
+        @Design(node = "#driving/rpm") rpm: String,
+        @Design(node = "#driving/speedo-gauge/rpm") rpmGauge: Meter,
+        @Design(node = "#driving/rpm-needle") rpmNeedle: Meter,
+        @Design(node = "#driving/speed-limit") speedLimit: String,
+        @Design(node = "#driving/speed-limit-container") speedLimitDisplayed: Boolean,
+        @Design(node = "#weather/temp") temp: String,
+        @Design(node = "#driving/date") date: String,
+        @Design(node = "#range-remaining") remainingRange: String,
+        @Design(node = "#driving/battery-gauge") batteryLevel: String,
+        @Design(node = "#telltale/no-seatbelt") seatbelt: Boolean,
+        @Design(node = "#telltale/low-tire-pressure") lowTirePressure: Boolean,
+        @Design(node = "#telltale/airbag") airbag: Boolean,
+        @Design(node = "#telltale/abs") abs: Boolean,
+        @Design(node = "#telltale/brake") brake: Boolean,
+        @Design(node = "#telltale/traction") traction: Boolean,
+        @Design(node = "#telltale/fog-lights") fogLights: Boolean,
+        @Design(node = "#telltale/park-lights") parkLights: Boolean,
+        @Design(node = "#telltale/hi-beam") hibeam: Boolean,
+        @Design(node = "#telltale/low-beam") lowbeam: Boolean,
+        @Design(node = "#telltale/left-blinker") turnSignalLeft: Boolean,
+        @Design(node = "#telltale/right-blinker") turnSignalRight: Boolean,
+        @Design(node = "#telltale/open-doors") openDoors: Boolean,
+        @Design(node = "#telltale/open-trunk") openTrunk: Boolean,
+    )
 }
 
 @Composable
