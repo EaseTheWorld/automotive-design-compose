@@ -58,7 +58,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.designcompose.DesignVariableModeValues
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 
@@ -74,12 +73,17 @@ enum class PlaneViewMode {
     DRIVER_UI_ONLY,
 }
 
+/**
+ * Interactive test bench harness for the AAOS SDV Dual-VM Cluster POC.
+ *
+ * All standard Jetpack Compose UI (top status bar, bottom control deck, 60fps telemetry generator,
+ * and simulated DRM hardware plane blending) lives here, while the actual cluster rendering is
+ * delegated to the pure DesignCompose Squoosh stages in [ClusterDualVmStage.kt]:
+ * - [HarSafetyStage] (#HAR-stage)
+ * - [DriverUiIviStage] (#android-stage)
+ */
 @Composable
-fun ClusterDualVmPocTest() {
-    // Shared Figma Doc ID: CuF1b1eAIukB6YszX6B5OZ
-    // Plane 1 (Safety HAR VM):  #HAR-stage via ClusterHARUIDoc
-    // Plane 2 (Android IVI VM): #android-stage via ClusterDriverUIDoc
-
+fun ClusterDualVmSimulator() {
     var harVariant by remember { mutableStateOf(ClusterHARVariant.HarVariant.Retro) }
     var wrapperVariant by remember { mutableStateOf(ClusterHARVariant.WrapperVariant.Full) }
 
@@ -132,17 +136,28 @@ fun ClusterDualVmPocTest() {
         if (speedInt == 0) 8f else (18f + (speedInGear / 33f) * 70f).coerceIn(10f, 95f)
     val rpmInt = currentRpm.roundToInt()
 
-    // Normalize speedGauge (0..100%) across 0..130 MPH
     val speedGaugePct = ((currentSpeed / 130f) * 100f).coerceIn(0f, 100f)
     val rpmGaugePct = currentRpm.coerceIn(0f, 100f)
-
-    // Dynamic battery & range derived from speed sweep
     val batteryPct = (92 - (currentSpeed * 0.45f).roundToInt()).coerceIn(15, 95)
     val rangeMiles = (batteryPct * 2.8f).roundToInt()
     val overSpeedLimit = speedInt > 65
 
-    // Key that forces child @DesignComponent replacements (#HAR-UI & #HAR-UI-Wrapper)
-    // to re-merge LocalCustomizationContext on every telemetry tick
+    val telemetryState =
+        HarTelemetryState(
+            speedMph = speedInt,
+            speedArcPercent = speedGaugePct,
+            rpmHundreds = rpmInt,
+            rpmArcPercent = rpmGaugePct,
+            gearLabel = "Gear ${gearBand + 1}  •  Oct 25",
+            tempLabel = "${68 + (speedInt / 25)}°F",
+            rangeLabel = "$rangeMiles MI",
+            batteryPercent = batteryPct,
+            overSpeedLimit = overSpeedLimit,
+            iviFaultActive = iviVmState != IviVmState.RUNNING,
+            blinkerLeft = blinkerTick,
+            blinkerRight = !blinkerTick,
+        )
+
     val telemetryKey =
         "${speedInt}_${rpmInt}_${batteryPct}_${blinkerTick}_${iviVmState}_${darkThemeMode}_${brandModeIndex}"
 
@@ -150,19 +165,11 @@ fun ClusterDualVmPocTest() {
     val currentSize = sizeModes[brandModeIndex % sizeModes.size]
     val themeName = if (darkThemeMode) "Dark" else "Light"
 
-    val variableModes =
-        hashMapOf(
-            "02 theme" to themeName,
-            "Color" to themeName,
-            "material-theme" to themeName,
-            "custom-theme" to themeName,
-            "local-material-theme" to themeName,
-            "local-custom-theme" to themeName,
-            "Typography" to currentBrand,
-            "Component Size" to currentSize,
-        )
-
-    DesignVariableModeValues(variableModes) {
+    DcfVariableThemeScope(
+        themeName = themeName,
+        brandName = currentBrand,
+        componentSize = currentSize,
+    ) {
         Column(
             modifier = Modifier.fillMaxSize().background(Color(0xFF0E1117)).padding(12.dp),
             verticalArrangement = Arrangement.SpaceBetween,
@@ -263,66 +270,23 @@ fun ClusterDualVmPocTest() {
                             ),
                     contentAlignment = Alignment.Center,
                 ) {
-                    // =========================================================================
-                    // PLANE 1: Safety VM — High Availability Renderer (#HAR-stage)
-                    // Pass telemetryKey to harMain, harUi, and harUiWrapper so child
-                    // @DesignComponent replacements re-merge customizations on every frame!
-                    // =========================================================================
+                    // PLANE 1: Safety VM — High Availability Renderer (#HAR-stage in ClusterDualVmStage.kt)
                     if (planeViewMode != PlaneViewMode.DRIVER_UI_ONLY) {
-                        ClusterHARUIDoc.harMain(
+                        HarSafetyStage(
+                            telemetry = telemetryState,
+                            harVariant = harVariant,
+                            wrapperVariant = wrapperVariant,
+                            stateKey = telemetryKey,
                             modifier =
                                 Modifier.requiredSize(1920.dp, 720.dp).graphicsLayer {
                                     scaleX = scale
                                     scaleY = scale
                                     transformOrigin = TransformOrigin(0.5f, 0.5f)
                                 },
-                            key = telemetryKey,
-                            harUi = { ctx ->
-                                ClusterHARUIDoc.harUi(
-                                    modifier = ctx.layoutModifier,
-                                    key = telemetryKey,
-                                    harVariant = harVariant,
-                                )
-                            },
-                            harUiWrapper = { ctx ->
-                                ClusterHARUIDoc.harUiWrapper(
-                                    modifier = ctx.layoutModifier,
-                                    key = telemetryKey,
-                                    wrapperVariant = wrapperVariant,
-                                )
-                            },
-                            speed = speedInt.toString(),
-                            speedGauge = speedGaugePct,
-                            speedNeedle = speedGaugePct,
-                            rpm = rpmInt.toString(),
-                            rpmGauge = rpmGaugePct,
-                            rpmNeedle = rpmGaugePct,
-                            speedLimit = "65",
-                            speedLimitDisplayed = true,
-                            temp = "${68 + (speedInt / 25)}°F",
-                            date = "Gear ${gearBand + 1}  •  Oct 25",
-                            remainingRange = "$rangeMiles MI",
-                            batteryLevel = batteryPct.toString(),
-                            seatbelt = overSpeedLimit,
-                            lowTirePressure = overSpeedLimit,
-                            airbag = false,
-                            abs = iviVmState != IviVmState.RUNNING,
-                            brake = speedInt < 15,
-                            traction = overSpeedLimit,
-                            fogLights = false,
-                            parkLights = true,
-                            hibeam = speedInt > 95,
-                            lowbeam = true,
-                            turnSignalLeft = blinkerTick,
-                            turnSignalRight = !blinkerTick,
-                            openDoors = false,
-                            openTrunk = false,
                         )
                     }
 
-                    // =========================================================================
-                    // PLANE 2: Android IVI VM — DriverUI (#android-stage)
-                    // =========================================================================
+                    // PLANE 2: Android IVI VM — DriverUI (#android-stage in ClusterDualVmStage.kt)
                     if (planeViewMode != PlaneViewMode.HAR_ONLY) {
                         if (iviVmState != IviVmState.CRASHED_REBOOTING) {
                             Box(
@@ -350,7 +314,15 @@ fun ClusterDualVmPocTest() {
                                             }
                                         }
                             ) {
-                                ClusterDriverUIDoc.androidMain(
+                                DriverUiIviStage(
+                                    panel1 = panel1,
+                                    panel2 = panel2,
+                                    panel3 = panel3,
+                                    mediaState = mediaState,
+                                    phoneState = phoneState,
+                                    viewMode =
+                                        if (overSpeedLimit) ClusterVariant.ViewMode.sport
+                                        else viewMode,
                                     modifier =
                                         Modifier.requiredSize(1920.dp, 720.dp)
                                             .then(
@@ -361,14 +333,6 @@ fun ClusterDualVmPocTest() {
                                                     )
                                                 } else Modifier
                                             ),
-                                    panel1Component = panel1,
-                                    panel2Component = panel2,
-                                    panel3Component = panel3,
-                                    mediaPlayerState = mediaState,
-                                    phoneState = phoneState,
-                                    viewMode =
-                                        if (overSpeedLimit) ClusterVariant.ViewMode.sport
-                                        else viewMode,
                                 )
                             }
                         } else {
@@ -403,7 +367,6 @@ fun ClusterDualVmPocTest() {
                         .padding(10.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                // Row 1: Continuous HAR Speed Telemetry & Stage Layout
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -415,7 +378,7 @@ fun ClusterDualVmPocTest() {
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                     )
-                    PocButton(
+                    SimulatorButton(
                         text =
                             if (autoTelemetry) "Auto Sweep: ON (${speedInt} MPH)"
                             else "Auto Sweep: PAUSED (${speedInt} MPH)",
@@ -428,15 +391,15 @@ fun ClusterDualVmPocTest() {
                             autoTelemetry = true
                         }
                     }
-                    PocButton(text = "-25 MPH", selected = false) {
+                    SimulatorButton(text = "-25 MPH", selected = false) {
                         autoTelemetry = false
                         manualSpeed = (currentSpeed - 25f).coerceIn(0f, 130f)
                     }
-                    PocButton(text = "+25 MPH", selected = false) {
+                    SimulatorButton(text = "+25 MPH", selected = false) {
                         autoTelemetry = false
                         manualSpeed = (currentSpeed + 25f).coerceIn(0f, 130f)
                     }
-                    PocButton(
+                    SimulatorButton(
                         text = "Retro Gauge",
                         selected = harVariant == ClusterHARVariant.HarVariant.Retro,
                     ) {
@@ -446,7 +409,7 @@ fun ClusterDualVmPocTest() {
                         panel2 = ClusterVariant.ComponentType.Call
                         panel3 = ClusterVariant.ComponentType.None
                     }
-                    PocButton(
+                    SimulatorButton(
                         text = "Thin Arcs",
                         selected =
                             harVariant == ClusterHARVariant.HarVariant.Modern &&
@@ -458,7 +421,7 @@ fun ClusterDualVmPocTest() {
                         panel2 = ClusterVariant.ComponentType.CallThin
                         panel3 = ClusterVariant.ComponentType.NavigationThin
                     }
-                    PocButton(
+                    SimulatorButton(
                         text = "Rear Cam",
                         selected = harVariant == ClusterHARVariant.HarVariant.ModernCamera,
                     ) {
@@ -467,7 +430,6 @@ fun ClusterDualVmPocTest() {
                     }
                 }
 
-                // Row 2: Dual-VM Fault Injection & Live DCF Variable Modes
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -479,7 +441,7 @@ fun ClusterDualVmPocTest() {
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                     )
-                    PocButton(
+                    SimulatorButton(
                         text =
                             if (iviVmState == IviVmState.CRASHED_REBOOTING)
                                 "Restore Android IVI VM"
@@ -491,7 +453,7 @@ fun ClusterDualVmPocTest() {
                             if (iviVmState == IviVmState.CRASHED_REBOOTING) IviVmState.RUNNING
                             else IviVmState.CRASHED_REBOOTING
                     }
-                    PocButton(text = "Swap IVI Panel", selected = false) {
+                    SimulatorButton(text = "Swap IVI Panel", selected = false) {
                         panel2 =
                             when (panel2) {
                                 ClusterVariant.ComponentType.Call ->
@@ -501,19 +463,19 @@ fun ClusterDualVmPocTest() {
                                 else -> ClusterVariant.ComponentType.Call
                             }
                     }
-                    PocButton(
+                    SimulatorButton(
                         text = "DCF Theme: $themeName",
                         selected = !darkThemeMode,
                     ) {
                         darkThemeMode = !darkThemeMode
                     }
-                    PocButton(
+                    SimulatorButton(
                         text = "DCF OEM Var: $currentBrand/$currentSize",
                         selected = brandModeIndex > 0,
                     ) {
                         brandModeIndex = (brandModeIndex + 1) % 3
                     }
-                    PocButton(
+                    SimulatorButton(
                         text = "Plane: ${planeViewMode.name}",
                         selected = planeViewMode != PlaneViewMode.COMPOSITE,
                     ) {
@@ -531,7 +493,7 @@ fun ClusterDualVmPocTest() {
 }
 
 @Composable
-private fun PocButton(
+private fun SimulatorButton(
     text: String,
     selected: Boolean,
     danger: Boolean = false,
