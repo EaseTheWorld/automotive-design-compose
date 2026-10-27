@@ -113,6 +113,7 @@ interface ClusterHARUI {
         @DesignVariant(property = "#har-variant") harVariant: ClusterHARVariant.HarVariant,
         @DesignVariant(property = "#wrapper-variant")
         wrapperVariant: ClusterHARVariant.WrapperVariant,
+        @Design(node = "BackgroundLayer") showFallbackBackground: Boolean,
         @Design(node = "#driving/speed") speed: String,
         @Design(node = "#driving/speedo-gauge") speedGauge: Meter,
         @Design(node = "#driving/needle") speedNeedle: Meter,

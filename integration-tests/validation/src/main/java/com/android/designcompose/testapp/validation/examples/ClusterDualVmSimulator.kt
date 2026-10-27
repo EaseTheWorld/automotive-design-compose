@@ -45,15 +45,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -104,12 +98,12 @@ fun ClusterDualVmSimulator() {
     val brandModes = listOf("hyundai", "kia", "genesis")
     val sizeModes = listOf("Small", "Medium", "Large")
 
-    // Continuous 60fps safety telemetry loop in the simulated HAR Safety VM (0 -> 130 MPH sweep)
+    // Continuous 60fps safety telemetry loop in the simulated HAR Safety VM (0 -> 98 MPH sweep)
     val infiniteTransition = rememberInfiniteTransition(label = "har_telemetry")
     val animatedSpeed by
         infiniteTransition.animateFloat(
             initialValue = 0f,
-            targetValue = 130f,
+            targetValue = 98f,
             animationSpec =
                 infiniteRepeatable(
                     animation = tween(5500, easing = LinearEasing),
@@ -267,10 +261,50 @@ fun ClusterDualVmSimulator() {
                             ),
                     contentAlignment = Alignment.Center,
                 ) {
-                    // PLANE 1: Safety VM — High Availability Renderer (#HAR-stage in ClusterDualVmStage.kt)
+                    // PLANE 1 (Bottom DRM Plane): Android IVI VM — DriverUI (#android-stage)
+                    // Stays mounted in VRAM even during a crash; when heartbeat is lost, Plane 2
+                    // (#HAR-stage) enables its own "BackgroundLayer" (#heartbeat=off) to occlude it.
+                    if (planeViewMode != PlaneViewMode.HAR_ONLY) {
+                        DriverUiIviStage(
+                            panel1 = panel1,
+                            panel2 = panel2,
+                            panel3 = panel3,
+                            mediaState = mediaState,
+                            phoneState = phoneState,
+                            viewMode =
+                                if (overSpeedLimit) ClusterVariant.ViewMode.sport else viewMode,
+                            modifier =
+                                Modifier.requiredSize(1920.dp, 720.dp)
+                                    .graphicsLayer {
+                                        scaleX = scale
+                                        scaleY = scale
+                                        transformOrigin = TransformOrigin(0.5f, 0.5f)
+                                    }
+                                    .then(
+                                        if (showPlaneWireframes) {
+                                            Modifier.border(
+                                                3.dp,
+                                                Color(0xFF388BFD).copy(alpha = 0.7f),
+                                            )
+                                        } else Modifier
+                                    ),
+                        )
+                    }
+
+                    // PLANE 2 (Top See-Through DRM Overlay Plane): Safety VM — HAR (#HAR-stage)
+                    // Because "BackgroundLayer" (#heartbeat=off) inside #HAR-stage is hidden while
+                    // the Android IVI VM heartbeat is healthy, #HAR-stage is natively 100%
+                    // see-through over #android-stage without any BlendMode tricks!
                     if (planeViewMode != PlaneViewMode.DRIVER_UI_ONLY) {
                         HarSafetyStage(
-                            telemetry = telemetryState,
+                            telemetry =
+                                telemetryState.copy(
+                                    // Show fallback BackgroundLayer if Android IVI VM is offline
+                                    // OR when viewing HAR_ONLY plane in isolation
+                                    iviFaultActive =
+                                        iviVmState != IviVmState.RUNNING ||
+                                            planeViewMode == PlaneViewMode.HAR_ONLY
+                                ),
                             harVariant = harVariant,
                             wrapperVariant = wrapperVariant,
                             modifier =
@@ -282,74 +316,28 @@ fun ClusterDualVmSimulator() {
                         )
                     }
 
-                    // PLANE 2: Android IVI VM — DriverUI (#android-stage in ClusterDualVmStage.kt)
-                    if (planeViewMode != PlaneViewMode.HAR_ONLY) {
-                        if (iviVmState != IviVmState.CRASHED_REBOOTING) {
-                            Box(
-                                modifier =
-                                    Modifier.requiredSize(1920.dp, 720.dp)
-                                        .graphicsLayer {
-                                            scaleX = scale
-                                            scaleY = scale
-                                            transformOrigin = TransformOrigin(0.5f, 0.5f)
-                                            alpha =
-                                                if (iviVmState == IviVmState.FROZEN_ANR) 0.45f
-                                                else 1f
-                                        }
-                                        .drawWithContent {
-                                            drawIntoCanvas { canvas ->
-                                                val paint =
-                                                    Paint().apply {
-                                                        blendMode =
-                                                            if (darkThemeMode) BlendMode.Lighten
-                                                            else BlendMode.Darken
-                                                    }
-                                                canvas.saveLayer(Rect(Offset.Zero, size), paint)
-                                                drawContent()
-                                                canvas.restore()
-                                            }
-                                        }
-                            ) {
-                                DriverUiIviStage(
-                                    panel1 = panel1,
-                                    panel2 = panel2,
-                                    panel3 = panel3,
-                                    mediaState = mediaState,
-                                    phoneState = phoneState,
-                                    viewMode =
-                                        if (overSpeedLimit) ClusterVariant.ViewMode.sport
-                                        else viewMode,
-                                    modifier =
-                                        Modifier.requiredSize(1920.dp, 720.dp)
-                                            .then(
-                                                if (showPlaneWireframes) {
-                                                    Modifier.border(
-                                                        3.dp,
-                                                        Color(0xFF388BFD).copy(alpha = 0.7f),
-                                                    )
-                                                } else Modifier
-                                            ),
-                                )
-                            }
-                        } else {
-                            Box(
-                                modifier =
-                                    Modifier.background(
-                                            Color(0xCC3B0A0D),
-                                            RoundedCornerShape(8.dp),
-                                        )
-                                        .border(1.dp, Color(0xFFF85149), RoundedCornerShape(8.dp))
-                                        .padding(horizontal = 20.dp, vertical = 12.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text =
-                                        "ANDROID IVI VM OFFLINE (KERNEL PANIC / REBOOTING...)\nHAR Safety Plane (#HAR-stage) Continues Uninterrupted at 60 FPS",
-                                    color = Color(0xFFFF7B72),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                )
-                            }
+                    // Optional visual indicator when simulating Android IVI VM crash
+                    if (
+                        planeViewMode != PlaneViewMode.HAR_ONLY &&
+                            iviVmState == IviVmState.CRASHED_REBOOTING
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier.background(
+                                        Color(0xCC3B0A0D),
+                                        RoundedCornerShape(8.dp),
+                                    )
+                                    .border(1.dp, Color(0xFFF85149), RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text =
+                                    "ANDROID IVI VM OFFLINE (HEARTBEAT LOST -> HAR BackgroundLayer ACTIVE)\nHAR Safety Plane (#HAR-stage) Continues Uninterrupted at 60 FPS",
+                                color = Color(0xFFFF7B72),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
                         }
                     }
                 }
@@ -406,16 +394,24 @@ fun ClusterDualVmSimulator() {
                         panel3 = ClusterVariant.ComponentType.None
                     }
                     SimulatorButton(
-                        text = "Thin Arcs",
-                        selected =
-                            harVariant == ClusterHARVariant.HarVariant.Modern &&
-                                wrapperVariant == ClusterHARVariant.WrapperVariant.Thin,
+                        text = "Modern Arcs",
+                        selected = harVariant == ClusterHARVariant.HarVariant.Modern,
                     ) {
                         harVariant = ClusterHARVariant.HarVariant.Modern
-                        wrapperVariant = ClusterHARVariant.WrapperVariant.Thin
+                        wrapperVariant = ClusterHARVariant.WrapperVariant.Full
                         panel1 = ClusterVariant.ComponentType.MediaThin
                         panel2 = ClusterVariant.ComponentType.CallThin
                         panel3 = ClusterVariant.ComponentType.NavigationThin
+                    }
+                    SimulatorButton(
+                        text = "Compact HUD",
+                        selected = harVariant == ClusterHARVariant.HarVariant.Compact,
+                    ) {
+                        harVariant = ClusterHARVariant.HarVariant.Compact
+                        wrapperVariant = ClusterHARVariant.WrapperVariant.Full
+                        panel1 = ClusterVariant.ComponentType.None
+                        panel2 = ClusterVariant.ComponentType.None
+                        panel3 = ClusterVariant.ComponentType.Navigation
                     }
                     SimulatorButton(
                         text = "Rear Cam",

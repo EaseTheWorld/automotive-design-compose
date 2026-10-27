@@ -55,6 +55,12 @@ fun HarSafetyStage(
         modifier = modifier,
         harVariant = harVariant,
         wrapperVariant = wrapperVariant,
+        // Native Dual-VM See-Through Control:
+        // - false (Android Heartbeat ON): Hides "BackgroundLayer" (#heartbeat=off) so #HAR-stage
+        //   is 100% transparent, letting #android-stage show through from the bottom plane.
+        // - true (Android Heartbeat OFF / Crash): Enables "BackgroundLayer" so #HAR-stage
+        //   renders its own opaque safety background over the dead/frozen Android plane.
+        showFallbackBackground = telemetry.iviFaultActive,
         speed = telemetry.speedMph.toString(),
         speedGauge = telemetry.speedArcPercent,
         speedNeedle = telemetry.speedArcPercent,
