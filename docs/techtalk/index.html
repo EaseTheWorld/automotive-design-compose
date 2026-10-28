@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AAOS SDV Display Safety 공식 아키텍처 & DesignCompose Dual-VM POC</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --background: #0b0f17;
+      --foreground: #f1f5f9;
+      --card: #131b2e;
+      --border: #23304c;
+      --muted-foreground: #94a3b8;
+      --primary: #3b82f6;
+      --primary-foreground: #ffffff;
+      --secondary: #1e293b;
+      --secondary-foreground: #e2e8f0;
+    }
+    html.light {
+      --background: #f8fafc;
+      --foreground: #0f172a;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --muted-foreground: #475569;
+      --primary: #2563eb;
+      --primary-foreground: #ffffff;
+      --secondary: #e2e8f0;
+      --secondary-foreground: #1e293b;
+    }
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
+    }
+    .tab-active {
+      background-color: var(--primary) !important;
+      color: var(--primary-foreground) !important;
+      border-color: var(--primary) !important;
+    }
+    .badge-same {
+      background-color: rgba(16, 185, 129, 0.16);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .badge-similar {
+      background-color: rgba(59, 130, 246, 0.16);
+      color: #3b82f6;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+    }
+    .badge-diff {
+      background-color: rgba(245, 158, 11, 0.16);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+    pre {
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body class="antialiased p-6 md:p-10">
+
+  <!-- Header -->
+  <header class="max-w-6xl mx-auto mb-8 border-b border-[var(--border)] pb-6">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-[var(--secondary)] text-[var(--secondary-foreground)]">
+          Tech-Talk Presentation
+        </span>
+        <span class="px-3 py-1 rounded-full text-xs font-semibold border border-[var(--border)] text-[var(--muted-foreground)]">
+          AAOS SDV Display Safety + Automotive Design for Compose
+        </span>
+      </div>
+      <button onclick="toggleTheme()" id="theme-btn" class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--border)] bg-[var(--card)] hover:opacity-80 transition">
+        ☀️ Light / 🌙 Dark 전환
+      </button>
+    </div>
+    <h1 class="text-2xl md:text-4xl font-bold tracking-tight mb-3">
+      AAOS SDV Display Safety 아키텍처 해설 및 DesignCompose Dual-VM POC
+    </h1>
+    <p class="text-[var(--muted-foreground)] text-sm md:text-base leading-relaxed">
+      <strong>1부</strong>에서는 Google AOSP 공식 문서(<code class="px-1.5 py-0.5 rounded bg-[var(--secondary)] text-xs">display-safety</code>, <code class="px-1.5 py-0.5 rounded bg-[var(--secondary)] text-xs">driverui</code>, <code class="px-1.5 py-0.5 rounded bg-[var(--secondary)] text-xs">toolchain</code>)가 정의하는 양산 Dual-VM 클러스터 아키텍처를 살펴보고,
+      <strong>2부</strong>에서는 일반 Android 개발 환경 제약 하에서 단일 <code class="px-1.5 py-0.5 rounded bg-[var(--secondary)] text-xs">.dcf</code> 파일로 구현한 POC 시뮬레이션의 <strong>동일점(Same) · 유사점(Similar) · 차이점(Different)</strong>을 분석합니다.
+    </p>
+
+    <!-- Navigation Tabs -->
+    <div class="flex flex-wrap gap-2 mt-6">
+      <button onclick="switchPart('all')" id="btn-all" class="tab-active px-4 py-2 rounded-lg text-sm font-semibold border border-[var(--border)] transition">
+        전체 보기 (1부 + 2부)
+      </button>
+      <button onclick="switchPart('part1')" id="btn-part1" class="px-4 py-2 rounded-lg text-sm font-semibold border border-[var(--border)] bg-[var(--card)] transition">
+        1부: AOSP 공식 SDV Display Safety 아키텍처
+      </button>
+      <button onclick="switchPart('part2')" id="btn-part2" class="px-4 py-2 rounded-lg text-sm font-semibold border border-[var(--border)] bg-[var(--card)] transition">
+        2부: 개발 환경 제약을 고려한 DesignCompose POC & 비교 분석
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto space-y-12">
+
+    <!-- ===================================================================== -->
+    <!-- PART 1: AOSP OFFICIAL SDV DISPLAY SAFETY ARCHITECTURE                 -->
+    <!-- ===================================================================== -->
+    <section id="section-part1" class="space-y-8">
+      <div class="border-l-4 border-blue-500 pl-4">
+        <span class="text-xs font-bold uppercase tracking-wider text-blue-500">Part 1 · AOSP Official Architecture</span>
+        <h2 class="text-xl md:text-2xl font-bold mt-1">
+          1부. Android 공식 문서로 보는 SDV Display Safety 아키텍처
+        </h2>
+        <p class="text-sm text-[var(--muted-foreground)] mt-1">
+          출처:
+          <a href="https://source.android.com/docs/automotive/sdv/display-safety" target="_blank" class="underline">Display Safety 개요</a> ·
+          <a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui" target="_blank" class="underline">DriverUI 아키텍처</a> ·
+          <a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain" target="_blank" class="underline">Safety Design Toolchain</a>
+        </p>
+      </div>
+
+      <!-- Slide 1.1: Why Display Safety & 3 Core Components -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm space-y-6">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="text-lg font-bold">1-1. 왜 Display Safety인가? (3대 핵심 컴포넌트와 Dual-VM 분리)</h3>
+          <span class="text-xs px-2.5 py-1 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">ISO 26262 ASIL-B + QM 공존</span>
+        </div>
+
+        <p class="text-sm text-[var(--muted-foreground)] leading-relaxed">
+          최신 콕핏 도메인 컨트롤러(Cockpit Domain Controller)는 클러스터(계기판)와 IVI(인포테인먼트)를 하나의 통합 디스플레이 환경으로 결합합니다.
+          하지만 Android(AAOS) 단독으로는 <strong>Cold Boot 즉시 표시(Rapid Boot)</strong>와 <strong>기능 안전(ISO 26262 ASIL-B)</strong>을 보장하기 어렵기 때문에,
+          AOSP Display Safety는 시스템을 <strong>두 개의 Guest VM</strong>과 <strong>3대 소프트웨어 컴포넌트</strong>로 분리합니다.
+        </p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+          <div class="bg-white rounded-xl p-4 border border-[var(--border)]">
+            <img src="aosp_display-safety-06.png" alt="AOSP Cluster Overview" class="w-full rounded-lg mb-3" />
+            <p class="text-xs text-slate-600 text-center font-medium">▲ [AOSP 공식 그림] 클러스터와 IVI가 결합된 현대적 DriverUI 화면 예시</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-[var(--border)]">
+            <img src="aosp_display-safety-01.png" alt="Display Safety Components Dual VM" class="w-full rounded-lg mb-3" />
+            <p class="text-xs text-slate-600 text-center font-medium">▲ [AOSP 공식 그림] Guest VM2 (SDV Media: HAR + Safety Monitor) vs Guest VM1 (SDV-IVI: DriverUI)</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)]">
+            <div class="text-xs font-bold text-emerald-500 mb-1">Guest VM 2 · SDV Media (Rapid Boot VM)</div>
+            <h4 class="font-bold text-sm mb-2">① HAR (High Availability Renderer)</h4>
+            <ul class="text-xs text-[var(--muted-foreground)] space-y-1.5 list-disc pl-4">
+              <li><strong>언어/렌더러</strong>: <strong>Rust</strong>로 작성, <strong>Impeller</strong> 그래픽 백엔드 사용</li>
+              <li><strong>역할</strong>: 속도, RPM, 경고등(Telltales), 후방 카메라 등 안전/법규 필수 요소를 Cold Boot 직후 즉시 렌더링</li>
+              <li><strong>구조</strong>: PAL(Platform Abstraction Layer)을 통해 그래픽, 카메라, 오디오(Chime), 차량 신호(CAN) 추상화</li>
+              <li>Android가 죽거나 부팅 중일 때 플레이스홀더/배경을 대신 그림</li>
+            </ul>
+          </div>
+
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)]">
+            <div class="text-xs font-bold text-blue-500 mb-1">Guest VM 1 · SDV-IVI (Android VM)</div>
+            <h4 class="font-bold text-sm mb-2">② DriverUI (Android System App)</h4>
+            <ul class="text-xs text-[var(--muted-foreground)] space-y-1.5 list-disc pl-4">
+              <li><strong>프레임워크</strong>: AAOS <code>ClusterHomeManager</code> (Cluster 2 API) + <strong>Automotive Design for Compose</strong></li>
+              <li><strong>역할</strong>: HAR가 그리는 안전 요소를 제외한 나머지 전체 클러스터 화면(미디어, 전화, 내비게이션, 날씨 등) 렌더링</li>
+              <li>주기적으로 HAR에 <code>HeartbeatRequest</code> RPC를 전송하여 생존 상태를 알림</li>
+            </ul>
+          </div>
+
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)]">
+            <div class="text-xs font-bold text-purple-500 mb-1">Guest VM 2 · ASIL-B 검증</div>
+            <h4 class="font-bold text-sm mb-2">③ Safety Design Toolchain & Monitor</h4>
+            <ul class="text-xs text-[var(--muted-foreground)] space-y-1.5 list-disc pl-4">
+              <li><strong>핵심 가치</strong>: HAR와 DriverUI, Safety Monitor가 <strong>동일한 단일 Figma 디자인 소스(<code>.dcf</code>)</strong>로부터 생성됨을 보장</li>
+              <li>Figma 디자인에서 안전 중요 노드(Telltales)를 추출해 <strong>ISO-26262 TCL-3</strong> 등급의 MISRA-C Safety Monitor 검증 코드 생성</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 1.2: Blending HAR & DriverUI + Heartbeat + Alpha Punch-through -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm space-y-6">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="text-lg font-bold">1-2. HAR + DriverUI 화면 합성(Blending)과 Heartbeat 메커니즘</h3>
+          <span class="text-xs px-2.5 py-1 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">Hardware Display Plane Compositing</span>
+        </div>
+
+        <div class="bg-white rounded-xl p-5 border border-[var(--border)]">
+          <img src="aosp_display-safety-05.png" alt="HAR and DriverUI Composition" class="w-full max-w-4xl mx-auto rounded-lg mb-3" />
+          <p class="text-xs text-slate-600 text-center font-medium">
+            ▲ [AOSP 공식 그림] 상단 HAR (SDV VM) + 하단 DriverUI (AAOS IVI VM) → Hypervisor / SoC Display Controller가 하나의 화면으로 합성
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] space-y-2">
+            <h4 class="font-bold text-sm">💓 Heartbeat 기반 투명도(Transparency) 제어</h4>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+              HAR의 하드웨어 디스플레이 플레인은 안전 중요도 때문에 <strong>항상 Android IVI 플레인 위(Top Layer)</strong>에 위치합니다.
+            </p>
+            <ul class="text-xs text-[var(--muted-foreground)] space-y-1.5 list-disc pl-4">
+              <li><strong>정상 상태 (Heartbeat 수신 중)</strong>: DriverUI가 주기적으로 <code>HeartbeatRequest</code> RPC를 보내면, HAR는 플레이스홀더/배경을 제거하고 Android 출력 영역을 <strong>완전 투명(<code>alpha = 0.0</code>)</strong>으로 비워 하단 DriverUI가 투과(See-Through)되게 합니다.</li>
+              <li><strong>장애/부팅 상태 (Heartbeat 끊김)</strong>: DriverUI로부터 Heartbeat가 끊기면 HAR가 즉시 배경 영역을 <strong>불투명(<code>alpha = 1.0</code>)</strong>하게 채우고 자체 안전 UI와 플레이스홀더를 표시합니다.</li>
+            </ul>
+          </div>
+
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] space-y-2">
+            <h4 class="font-bold text-sm">🔍 공식 문서가 강조하는 Alpha 합성 및 Cross-VM 주의사항</h4>
+            <ul class="text-xs text-[var(--muted-foreground)] space-y-1.5 list-disc pl-4">
+              <li><strong>Alpha Punch-Through</strong>: HAR가 그리는 게이지/3D 요소는 반드시 <code>alpha = 1.0 (0xFF)</code>이어야 하며, 나머지 영역은 <code>alpha = 0.0</code>으로 클리어되어야 하단 Android 레이어가 보입니다.</li>
+              <li><strong>Cross-VM 디버깅 한계</strong>: HAR(<code>sdv_media_har_cf</code>)와 Android IVI(<code>sdv_ivi_cf_ds</code>)는 서로 다른 Guest VM에서 돌기 때문에, Android에서 <code>adb shell dumpsys SurfaceFlinger</code>를 실행해도 상단 HAR 레이어는 보이지 않습니다.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 1.3: Inter-VM RPC & Live Figma Sync -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm space-y-6">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="text-lg font-bold">1-3. 단일 Figma 문서 동기화(SDVGateway) 및 테마 RPC 연동</h3>
+          <span class="text-xs px-2.5 py-1 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">Single Source of Truth (.dcf)</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+          <div class="bg-white rounded-xl p-4 border border-[var(--border)]">
+            <img src="aosp_driver-ui-04.png" alt="Live update of design document from Figma to DriverUI and HAR" class="w-full rounded-lg mb-2" />
+            <p class="text-xs text-slate-600 text-center font-medium">
+              ▲ [AOSP 공식 그림] Figma Cloud → DriverUI 로컬 <code>.dcf</code> 업데이트 후 <code>SDVGateway</code>를 통해 VM2(HAR)의 로컬 <code>.dcf</code>까지 동시 동기화
+            </p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-[var(--border)]">
+            <img src="aosp_driver-ui-03.png" alt="RPC communication to change both DriverUI and HAR theme" class="w-full rounded-lg mb-2" />
+            <p class="text-xs text-slate-600 text-center font-medium">
+              ▲ [AOSP 공식 그림] RPC를 통해 DriverUI와 HAR의 테마(Variable Mode)를 동시에 전환
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 1.4: Deep Dive into Safety Design Toolchain & Safety Monitor -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm space-y-6">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="text-lg font-bold">1-4. [심층 해설] Safety Design Toolchain & Safety Monitor란 무엇인가?</h3>
+          <span class="text-xs px-2.5 py-1 rounded bg-purple-500/20 text-purple-400 border border-purple-500/40 font-semibold">ISO 26262 ASIL-B & TCL-3</span>
+        </div>
+
+        <p class="text-sm text-[var(--muted-foreground)] leading-relaxed">
+          자동차 기능 안전 표준(ISO 26262 ASIL-B)에서는 <strong>"차량 버스에서 브레이크/안전벨트 경고등 신호(ON)를 보냈을 때, 렌더러 버그나 레이어 가림 없이 실제 화면 픽셀에 경고등이 제대로 찍혔는가?"</strong>를 검증해야 합니다.
+          이를 위해 AOSP는 <strong>그리는 프로세스(HAR)</strong>와 <strong>검사하는 프로세스(Safety Monitor)</strong>를 분리하고, 동일한 Figma <code>.dcf</code> 파일에서 검사 기준(좌표 + 정답 픽셀)을 자동 추출하는 <strong>Safety Design Toolchain</strong>을 제공합니다.
+        </p>
+
+        <div class="bg-white rounded-xl p-4 border border-[var(--border)] space-y-3">
+          <img src="aosp_display-safety-02.png" alt="Safety design toolchain steps" class="w-full max-w-3xl mx-auto rounded-lg" />
+          <img src="aosp_toolchain-02.png" alt="Safety design toolchain detailed workflow" class="w-full max-w-4xl mx-auto rounded-lg" />
+          <p class="text-xs text-slate-600 text-center font-medium">
+            ▲ [AOSP 공식 그림] Safety Design Toolchain 파이프라인: Figma <code>.dcf</code> + <code>Config.json</code> → Safety Design Compiler → 엔지니어 육안 검수(HTML Report) 및 SHA-256 승인 토큰 → MISRA-C Safety Monitor 빌드
+          </p>
+        </div>
+
+        <!-- 4-Step Pipeline Breakdown -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div class="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)]">
+            <div class="text-xs font-bold text-blue-500 mb-1">Step 1 · 입력 정의</div>
+            <div class="font-bold text-xs mb-1"><code>.dcf</code> + <code>Config.json</code></div>
+            <p class="text-xs text-[var(--muted-foreground)]">
+              차량 신호 이름과 Figma 경고등 노드를 매핑합니다.<br/>
+              예: <code>"seatbelts": "#cluster/telltale/no-seatbelt"</code>
+            </p>
+          </div>
+          <div class="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)]">
+            <div class="text-xs font-bold text-blue-500 mb-1">Step 2 · Design Compiler</div>
+            <div class="font-bold text-xs mb-1">Headless Impeller 추출</div>
+            <p class="text-xs text-[var(--muted-foreground)]">
+              <code>.dcf</code>를 렌더링하며 각 경고등의 정확한 Bounding Box 좌표(<code>data.json</code>)와 조각 이미지(Golden Image PNG)를 추출합니다.
+            </p>
+          </div>
+          <div class="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)]">
+            <div class="text-xs font-bold text-amber-500 mb-1">Step 3 · HRR 승인 (TCL-3)</div>
+            <div class="font-bold text-xs mb-1">Human-Readable Report</div>
+            <p class="text-xs text-[var(--muted-foreground)]">
+              안전 엔지니어가 HTML 리포트의 좌표·스크린샷을 육안 검수 후 <code>approve-hrr</code>로 SHA-256 승인 토큰을 발급합니다.
+            </p>
+          </div>
+          <div class="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)]">
+            <div class="text-xs font-bold text-emerald-500 mb-1">Step 4 · 코드 생성 & 감시</div>
+            <div class="font-bold text-xs mb-1"><code>har_safety_monitor</code></div>
+            <p class="text-xs text-[var(--muted-foreground)]">
+              승인된 Golden Image를 C 헤더/바이너리로 컴파일하여, 런타임에 실제 화면 픽셀과 실시간 대조합니다.
+            </p>
+          </div>
+        </div>
+
+        <!-- Deep-Dive Q&A Cards: The two critical architectural questions -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+
+          <!-- Q1: Why same VM? -->
+          <div class="p-5 rounded-xl border-2 border-purple-500/40 bg-[var(--background)] space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-purple-500/20 text-purple-400">핵심 질문 Q1</span>
+              <h4 class="font-bold text-sm">왜 Safety Monitor가 HAR와 같은 VM(VM2)에서 도는가? VM이 죽으면 둘 다 죽지 않나?</h4>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+              <strong>A. ISO 26262의 ASIL 분해(Decomposition: QM + ASIL-B) 원리 때문이며, 감시 대상이 다릅니다!</strong>
+            </p>
+            <ul class="text-xs text-[var(--muted-foreground)] space-y-2 list-disc pl-4 leading-relaxed">
+              <li>
+                <strong>왜 HAR 자체는 QM(일반 품질)인가?</strong><br/>
+                HAR는 <code>.dcf</code> 파서, 레이아웃 엔진, <strong>Impeller GPU 렌더러 및 OpenGL/Vulkan 드라이버</strong>를 포함합니다. 수백만 줄에 달하는 GPU 그래픽 스택 전체를 ASIL-B로 인증받는 것은 사실상 불가능합니다.
+              </li>
+              <li>
+                <strong>소프트웨어 그래픽 버그 감시 (Safety Monitor · ASIL-B)</strong>:<br/>
+                따라서 복잡한 GPU 스택을 쓰는 <strong>HAR(그리는 놈, QM)</strong>와, GPU 없이 순수 CPU로 최종 프레임버퍼 메모리의 몇 바이트만 읽는 <strong>Safety Monitor(감시하는 놈, ASIL-B MISRA-C)</strong>를 별도 프로세스로 분리합니다. 만약 셰이더 버그나 알파 합성 오류로 경고등이 안 그려지면 Safety Monitor가 즉시 잡아냅니다.
+              </li>
+              <li>
+                <strong>VM2 전체 다운/프리징 감시 (외부 Safety MCU 하드웨어 Watchdog)</strong>:<br/>
+                만약 <code>SDV Media VM</code> 자체가 커널 패닉이나 무한 루프에 빠지면 Safety Monitor도 멈추며, 이때는 <strong>외부 하드웨어 Safety MCU(마이컴) / Display Controller CRC 체커</strong>가 Watchdog 타임아웃을 감지해 하드웨어 차원의 안전 조치를 수행합니다.
+              </li>
+            </ul>
+          </div>
+
+          <!-- Q2: How to compare static Golden Image against dynamic 60fps screen? -->
+          <div class="p-5 rounded-xl border-2 border-emerald-500/40 bg-[var(--background)] space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400">핵심 질문 Q2</span>
+              <h4 class="font-bold text-sm">골든 이미지는 정적(Static) 이미지인데, 실시간으로 변하는 화면과 어떻게 픽셀 비교를 하는가?</h4>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+              <strong>A. 전체 화면(1920×720)을 비교하는 것이 아니라, 오직 고정 좌표의 작은 경고등 영역(ROI Bounding Box)만 잘라 투명 픽셀을 제외하고 비교합니다!</strong>
+            </p>
+            <ul class="text-xs text-[var(--muted-foreground)] space-y-2 list-disc pl-4 leading-relaxed">
+              <li>
+                <strong>① 작은 사각형(Bounding Box) ROI 크롭 비교</strong>:<br/>
+                속도 숫자나 게이지 바늘이 움직이는 영역은 검사하지 않습니다. <code>data.json</code>에 기록된 고정 좌표(예: <code>X: 72, Y: 674, Width: 45, Height: 45</code>)의 <strong>45×45 픽셀 조각(안전벨트, ABS 등 Telltale 아이콘 위치)</strong>만 읽습니다.
+              </li>
+              <li>
+                <strong>② 투명 픽셀 마스킹 (Alpha Masking)</strong>:<br/>
+                AOSP 공식 문서 명시: <em>"The safety monitor might ignore the transparent pixels in these images for the purposes of run-time pixel tests."</em><br/>
+                즉, 45×45 골든 이미지에서 <strong>투명한 배경 픽셀(<code>alpha == 0</code>)은 무시</strong>하고, <strong>불투명한 빨간색/노란색 아이콘 획(Stroke) 픽셀만</strong> 실제 프레임버퍼 픽셀과 대조합니다.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Visual proof from AOSP toolchain docs -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center bg-white rounded-xl p-4 border border-[var(--border)] text-slate-800">
+          <div class="flex flex-col items-center justify-center p-2 border border-slate-200 rounded-lg">
+            <img src="aosp_toolchain-08.png" alt="No-seatbelt golden image" class="w-24 h-24 object-contain mb-2" />
+            <p class="text-xs text-slate-600 text-center font-medium">
+              ▲ ① 추출된 45×45 Golden Image<br/>(<code>#cluster/telltale/no-seatbelt</code>)<br/>흰색/투명 영역은 무시하고 빨간 픽셀만 검사
+            </p>
+          </div>
+          <div class="flex flex-col items-center justify-center p-2 border border-slate-200 rounded-lg">
+            <img src="aosp_toolchain-09.png" alt="Full UI with telltale active" class="w-full rounded mb-2" />
+            <p class="text-xs text-slate-600 text-center font-medium">
+              ▲ ② 전체 클러스터 화면(1920×720) 중 좌측 하단 <code>(72, 674)</code>의 45×45 영역만 Crop하여 대조
+            </p>
+          </div>
+          <div class="flex flex-col items-center justify-center p-2 border border-slate-200 rounded-lg">
+            <img src="aosp_toolchain-10.png" alt="Human readable report" class="w-full max-h-48 object-contain rounded mb-2" />
+            <p class="text-xs text-slate-600 text-center font-medium">
+              ▲ ③ 안전 엔지니어 검수용 HTML 리포트<br/>(각 Telltale의 <code>X, Y, Width, Height</code> 명시)
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- PART 2: DESIGNCOMPOSE POC UNDER ANDROID DEV CONSTRAINTS               -->
+    <!-- ===================================================================== -->
+    <section id="section-part2" class="space-y-8">
+      <div class="border-l-4 border-emerald-500 pl-4">
+        <span class="text-xs font-bold uppercase tracking-wider text-emerald-500">Part 2 · POC Simulation & Architecture Comparison</span>
+        <h2 class="text-xl md:text-2xl font-bold mt-1">
+          2부. 단일 Android 개발 환경 제약을 고려한 DesignCompose POC 구현 및 비교 분석
+        </h2>
+        <p class="text-sm text-[var(--muted-foreground)] mt-1">
+          일반 Android 앱 개발 환경(단일 VM 에뮬레이터)에서는 Hypervisor나 SDV Media VM(Rust + Impeller)을 직접 구동할 수 없습니다.
+          따라서 <strong>현재 Android 개발 환경에서 검증 가능한 핵심 아키텍처(단일 <code>.dcf</code> 분리 렌더링, Rust <code>dc_layout</code>, HAR Data-Driven 제약, See-Through & Failover)</strong>를 최대치로 시뮬레이션했습니다.
+        </p>
+      </div>
+
+      <!-- Slide 2.1: Core Comparison Table (Same / Similar / Different) -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm space-y-5">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="text-lg font-bold">2-1. [핵심 요약] 공식 양산 Dual-VM 아키텍처 vs 본 POC 비교 (Same · Similar · Different)</h3>
+          <div class="flex gap-2 text-xs font-semibold">
+            <span class="px-2.5 py-1 rounded-full badge-same">동일 (Same)</span>
+            <span class="px-2.5 py-1 rounded-full badge-similar">유사 (Similar)</span>
+            <span class="px-2.5 py-1 rounded-full badge-diff">차이 (Different / 환경 제약)</span>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs md:text-sm">
+            <thead>
+              <tr class="border-b border-[var(--border)] text-[var(--muted-foreground)]">
+                <th class="py-3 px-3 font-semibold">아키텍처 영역</th>
+                <th class="py-3 px-3 font-semibold text-center w-28">비교 판정</th>
+                <th class="py-3 px-3 font-semibold">1부: AOSP 공식 Dual-VM (Production SDV)</th>
+                <th class="py-3 px-3 font-semibold">2부: 본 DesignCompose POC (Single Android VM)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--border)]">
+              <tr>
+                <td class="py-3.5 px-3 font-semibold">1. 디자인 소스 (<code>.dcf</code>)</td>
+                <td class="py-3.5 px-3 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-bold badge-same">동일 (Same)</span></td>
+                <td class="py-3.5 px-3 text-[var(--muted-foreground)]">단일 Figma 문서를 직렬화한 <code>.dcf</code> 번들을 VM1(DriverUI)과 VM2(HAR)가 공유</td>
+                <td class="py-3.5 px-3"><strong>100% 동일한 공식 <code>.dcf</code> 파일</strong>(<code>CuF1b1eAIukB6YszX6B5OZ.dcf</code>)에서 <code>#HAR-stage</code>와 <code>#android-stage</code>를 각각 로드</td>
+              </tr>
+              <tr>
+                <td class="py-3.5 px-3 font-semibold">2. Rust 파서 & 레이아웃 엔진</td>
+                <td class="py-3.5 px-3 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-bold badge-same">동일 (Same)</span></td>
+                <td class="py-3.5 px-3 text-[var(--muted-foreground)]">Rust 크레이트(<code>dc_bundle</code>, <code>dc_layout</code>)가 <code>.dcf</code> 노드 트리와 레이아웃 계산</td>
+                <td class="py-3.5 px-3">JNI를 통해 <strong>동일한 Rust <code>dc_bundle</code> + <code>dc_layout</code> 엔진</strong>이 레이아웃과 Variant 트리를 계산</td>
+              </tr>
+              <tr>
+                <td class="py-3.5 px-3 font-semibold">3. HAR의 Data-Driven 인터페이스</td>
+                <td class="py-3.5 px-3 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-bold badge-same">동일 (Same)</span></td>
+                <td class="py-3.5 px-3 text-[var(--muted-foreground)]">HAR는 Jetpack Compose가 없으므로 스칼라 신호(속도, 경고등)와 Variant 상태만 주입받음</td>
+                <td class="py-3.5 px-3"><code>ClusterDualVmStage.kt</code>의 <code>harStage</code>에서 <strong><code>@Composable</code> 교체 람다를 전면 배제</strong>하고 오직 <code>@Design</code> 데이터와 <code>@DesignVariant</code>만 허용</td>
+              </tr>
+              <tr>
+                <td class="py-3.5 px-3 font-semibold">4. 투명 배경 & Failover 레이어 구조</td>
+                <td class="py-3.5 px-3 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-bold badge-same">동일 (Same)</span></td>
+                <td class="py-3.5 px-3 text-[var(--muted-foreground)]"><code>#HAR-stage</code>는 기본 투명(<code>alpha = 0.0</code>)이며, Heartbeat 상실 시 불투명 배경(<code>#heartbeat=off</code>) 표시</td>
+                <td class="py-3.5 px-3">해킹(BlendMode) 없이 <code>.dcf</code> 내부의 <code>BackgroundLayer</code>(<code>#heartbeat=off</code>) 가시성 제어만으로 <strong>Native See-Through 및 Failover</strong> 구현</td>
+              </tr>
+              <tr>
+                <td class="py-3.5 px-3 font-semibold">5. 테마(Variable Mode) 동시 전환</td>
+                <td class="py-3.5 px-3 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-bold badge-same">동일 (Same)</span></td>
+                <td class="py-3.5 px-3 text-[var(--muted-foreground)]">Figma Variable Collection(<code>Dark</code> / <code>Light</code>)을 통해 HAR와 DriverUI 테마를 동시 변경</td>
+                <td class="py-3.5 px-3"><code>DesignVariableModeValues</code>로 <code>Dark</code> / <code>Light</code> 모드를 두 Stage에 동시 적용</td>
+              </tr>
+              <tr>
+                <td class="py-3.5 px-3 font-semibold">6. 2-Plane 디스플레이 합성</td>
+                <td class="py-3.5 px-3 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-bold badge-similar">유사 (Similar)</span></td>
+                <td class="py-3.5 px-3 text-[var(--muted-foreground)]">Hypervisor / SoC Display Controller가 하단 IVI Plane과 상단 HAR Plane을 하드웨어 합성</td>
+                <td class="py-3.5 px-3">단일 화면의 2-Layer Z-Order Stack에서 하단 Plane 1(<code>DriverUiIviStage</code>) 위에 상단 Plane 2(<code>HarSafetyStage</code>)를 오버레이</td>
+              </tr>
+              <tr>
+                <td class="py-3.5 px-3 font-semibold">7. Heartbeat Watchdog & RPC</td>
+                <td class="py-3.5 px-3 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-bold badge-similar">유사 (Similar)</span></td>
+                <td class="py-3.5 px-3 text-[var(--muted-foreground)]">VM 간 RPC(<code>HeartbeatRequest</code>) 타임아웃 감지 시 HAR가 불투명 모드로 전환</td>
+                <td class="py-3.5 px-3">시뮬레이터 HUD의 <code>Kill IVI (Crash)</code> 토글이 Heartbeat 단절(<code>iviFaultActive = true</code>)을 트리거하여 즉시 Failover 재현</td>
+              </tr>
+              <tr>
+                <td class="py-3.5 px-3 font-semibold">8. HAR 실행 OS 및 그래픽 렌더러</td>
+                <td class="py-3.5 px-3 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-bold badge-diff">차이 (Different)</span></td>
+                <td class="py-3.5 px-3 text-[var(--muted-foreground)]"><strong>Non-Android VM (SDV Media VM)</strong> 위에서 순수 Rust 앱 + <strong>Impeller</strong> 렌더러로 구동</td>
+                <td class="py-3.5 px-3">단일 Android 에뮬레이터 환경 제약상 Android 프로세스 내 <strong>DesignCompose Squoosh (Compose Canvas)</strong> 렌더러로 구동</td>
+              </tr>
+              <tr>
+                <td class="py-3.5 px-3 font-semibold">9. 차량 신호(CAN) 및 Safety Monitor</td>
+                <td class="py-3.5 px-3 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-bold badge-diff">차이 (Different)</span></td>
+                <td class="py-3.5 px-3 text-[var(--muted-foreground)]">PAL이 실제 차량 CAN 신호를 수신하고, MISRA-C Safety Monitor가 픽셀 출력 검증</td>
+                <td class="py-3.5 px-3"><code>ClusterDualVmSimulator.kt</code>가 60fps 연속 속도/RPM/경고등 신호를 시뮬레이션하여 주입</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Slide 2.2: Code Separation for Tech-Talk -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm space-y-5">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="text-lg font-bold">2-2. 왜 코드를 두 파일(<code>Stage</code> vs <code>Simulator</code>)로 분리했는가?</h3>
+          <span class="text-xs px-2.5 py-1 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">Tech-Talk 코드 명확성</span>
+        </div>
+
+        <p class="text-sm text-[var(--muted-foreground)] leading-relaxed">
+          발표에서 청중이 <strong>"양산과 동일한 순수 <code>.dcf</code> 바인딩 영역"</strong>과 <strong>"단일 Android 환경 제약을 극복하기 위한 시뮬레이터 영역"</strong>을 한눈에 구분할 수 있도록 파일을 엄격히 분리했습니다.
+        </p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="p-4 rounded-xl border border-emerald-500/40 bg-[var(--background)] space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-emerald-500">① ClusterDualVmStage.kt (순수 .dcf 바인딩)</span>
+              <span class="text-xs px-2 py-0.5 rounded badge-same">양산 모델과 동일</span>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground)]">
+              일반 Jetpack Compose UI 위젯(<code>Box</code>, <code>Row</code>, <code>Text</code>, <code>Canvas</code>)을 <strong>단 하나도 import하지 않는</strong> 순수 선언부입니다.
+              특히 <code>HarSafetyStage</code>는 Non-Android VM에서 동작하는 HAR의 제약을 반영해 <strong>오직 스칼라 데이터와 Variant만</strong> 받습니다.
+            </p>
+            <pre class="p-3 rounded-lg bg-slate-950 text-slate-100 text-xs leading-relaxed"><code>@DesignComponent(node = "#HAR-stage")
+fun harStage(
+    // 서브트리 교체 (Variant): 레이아웃/래퍼 전환
+    @DesignVariant(property = "#har-variant")
+    harVariant: ClusterHARVariant.HarVariant,
+    @DesignVariant(property = "#wrapper-variant")
+    wrapperVariant: ClusterHARVariant.WrapperVariant,
+
+    // Heartbeat Failover 제어 (#heartbeat=off 배경)
+    @Design(node = "BackgroundLayer")
+    showFallbackBackground: Boolean,
+
+    // 연속 스칼라 데이터 (CAN 텔레메트리)
+    @Design(node = "#driving/speed") speed: String,
+    @Design(node = "#driving/speedo-gauge") speedGauge: Meter,
+    @Design(node = "#telltale/abs") abs: Boolean,
+    // ... (@Composable 교체 람다 0개!)
+)</code></pre>
+          </div>
+
+          <div class="p-4 rounded-xl border border-amber-500/40 bg-[var(--background)] space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-amber-500">② ClusterDualVmSimulator.kt (환경 제약 시뮬레이터)</span>
+              <span class="text-xs px-2 py-0.5 rounded badge-diff">Hypervisor + CAN 대행</span>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground)]">
+              단일 Android 앱 안에서 <strong>① Hypervisor 2-Plane 하드웨어 합성기</strong>, <strong>② 60fps CAN 신호 발생기</strong>, <strong>③ Heartbeat 장애 주입기</strong> 역할을 대신 수행하는 하네스입니다.
+            </p>
+            <pre class="p-3 rounded-lg bg-slate-950 text-slate-100 text-xs leading-relaxed"><code>// Hypervisor Display Controller의 2-Plane 합성 시뮬레이션
+Box(modifier = Modifier.requiredSize(1920.dp, 720.dp)) {
+    // Plane 1 (Bottom Layer): Guest VM 1 - Android DriverUI
+    if (!iviCrashed) {
+        DriverUiIviStage(panel1, panel2, panel3, ...)
+    }
+
+    // Plane 2 (Top Overlay): Guest VM 2 - HAR Safety Stage
+    // #HAR-stage는 기본 투명(alpha=0)이므로 하단 Plane 1이 투과됨!
+    // iviCrashed == true이면 BackgroundLayer가 켜지며 단독 동작
+    HarSafetyStage(
+        telemetry = telemetry.copy(iviFaultActive = iviCrashed),
+        harVariant = harVariant,
+        wrapperVariant = wrapperVariant,
+    )
+}</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 2.3: Visual Proof 1 - Data-Driven Variant Tree Swap -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm space-y-5">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="text-lg font-bold">2-3. 시뮬레이션 검증 ①: HAR의 Data-Driven 서브트리 교체 (<code>@DesignVariant</code>)</h3>
+          <span class="text-xs px-2.5 py-1 rounded badge-same">Composable 교체 없이 데이터만으로 UI 트리 전환</span>
+        </div>
+
+        <p class="text-sm text-[var(--muted-foreground)] leading-relaxed">
+          HAR에는 Jetpack Compose 코드가 없는데 어떻게 원형 게이지(<code>Retro</code>), 3분할 슬림 뷰(<code>Thin</code>), 후방 카메라 뷰(<code>ModernCamera</code>)로 화면 구조가 바뀔까요?
+          정답은 <code>.dcf</code> 파일 안에 모든 레이아웃 서브트리가 미리 직렬화되어 있고, 런타임에는 <code>#har-variant</code>라는 <strong>Enum 데이터 하나만 바꿔서 트리를 교체</strong>하기 때문입니다.
+          트리가 통째로 바뀌어도 내부의 데이터 홀더(<code>#driving/speed = "34"</code>)는 모든 Variant 트리에 동일하게 존재하므로 <strong>34 MPH 데이터가 그대로 유지</strong>됩니다.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--background)]">
+            <img src="har_compare_1_retro.png" alt="Retro Variant 34 MPH" class="w-full" />
+            <div class="p-3">
+              <div class="font-bold text-xs">① <code>HarVariant.Retro</code> + <code>Full</code></div>
+              <p class="text-xs text-[var(--muted-foreground)] mt-1">듀얼 원형 아날로그 바늘 게이지에서도 <code>#driving/speed = 34</code> 바인딩 유지</p>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--background)]">
+            <img src="har_compare_2_thin_modern.png" alt="Thin Variant 34 MPH" class="w-full" />
+            <div class="p-3">
+              <div class="font-bold text-xs">② <code>HarVariant.Thin</code> + <code>Thin</code></div>
+              <p class="text-xs text-[var(--muted-foreground)] mt-1">3-Panel 미디어/내비게이션 확보용 슬림 레이아웃에서도 동일하게 <code>34 MPH</code> 표시</p>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--background)]">
+            <img src="har_compare_3_rear_cam.png" alt="ModernCamera Variant 34 MPH" class="w-full" />
+            <div class="p-3">
+              <div class="font-bold text-xs">③ <code>HarVariant.ModernCamera</code> + <code>Full</code></div>
+              <p class="text-xs text-[var(--muted-foreground)] mt-1">후방 카메라 뷰포트가 포함된 서브트리로 즉시 전환되며 <code>34 MPH</code> 유지</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 2.4: Visual Proof 2 - Native See-Through & Heartbeat Failover -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm space-y-5">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="text-lg font-bold">2-4. 시뮬레이션 검증 ②: 1부 공식 문서의 Alpha See-Through & Heartbeat Failover 재현</h3>
+          <span class="text-xs px-2.5 py-1 rounded badge-same">AOSP 공식 합성 시나리오 100% 재현</span>
+        </div>
+
+        <p class="text-sm text-[var(--muted-foreground)] leading-relaxed">
+          1부 공식 문서의 <strong>"Blend HAR and DriverUI output"</strong> 및 <strong>"RPC theme change"</strong> 다이어그램과 똑같은 동작을 단일 <code>CuF1b1eAIukB6YszX6B5OZ.dcf</code>로 검증한 결과입니다.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--background)]">
+            <img src="see_through_1_dark.png" alt="Dark Mode Native See-Through" class="w-full" />
+            <div class="p-3">
+              <div class="font-bold text-xs text-emerald-500">① Heartbeat ON (정상 See-Through · Dark)</div>
+              <p class="text-xs text-[var(--muted-foreground)] mt-1">
+                상단 <code>#HAR-stage</code>의 배경이 투명(<code>alpha = 0.0</code>)하여 하단 <code>#android-stage</code>의 Media · Call · Navigation 카드가 자연스럽게 투과됩니다.
+              </p>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--background)]">
+            <img src="see_through_2_light.png" alt="Light Mode Variable Sync" class="w-full" />
+            <div class="p-3">
+              <div class="font-bold text-xs text-blue-500">② Variable Mode 동시 전환 (Light Theme)</div>
+              <p class="text-xs text-[var(--muted-foreground)] mt-1">
+                1부 공식 문서의 RPC 테마 동기화 그림처럼, Figma Variable Mode를 <code>Light</code>로 바꾸면 HAR 게이지와 DriverUI 카드가 동시에 밝은 테마로 전환됩니다.
+              </p>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--background)]">
+            <img src="see_through_3_heartbeat_lost.png" alt="Heartbeat OFF Failover" class="w-full" />
+            <div class="p-3">
+              <div class="font-bold text-xs text-amber-500">③ Heartbeat OFF (Android IVI Crash Failover)</div>
+              <p class="text-xs text-[var(--muted-foreground)] mt-1">
+                DriverUI가 중단되면 <code>#HAR-stage</code> 내부의 <code>BackgroundLayer</code>(<code>#heartbeat=off</code>)가 불투명하게 켜지며, 속도계(<code>69 MPH</code>)와 경고등이 끊김 없이 단독 동작합니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Takeaway Box -->
+      <div class="bg-[var(--card)] border-2 border-[var(--primary)] rounded-2xl p-6 shadow-sm">
+        <h3 class="text-base md:text-lg font-bold mb-2">🎯 Tech-Talk 결론 (Key Takeaways)</h3>
+        <ol class="text-xs md:text-sm text-[var(--muted-foreground)] space-y-2 list-decimal pl-5 leading-relaxed">
+          <li>
+            <strong>AOSP 공식 SDV Display Safety의 핵심</strong>은 디자이너가 작업한 <strong>단 하나의 Figma 문서(<code>.dcf</code>)</strong>를 가지고
+            Safety VM의 <strong>HAR(Rust + Impeller)</strong>, Android VM의 <strong>DriverUI(DesignCompose)</strong>, 그리고 <strong>Safety Monitor(ASIL-B 검증기)</strong>를 일관되게 구동하는 것입니다.
+          </li>
+          <li>
+            비록 일반 Android 개발 환경에서는 Hypervisor와 별도 Guest VM을 직접 띄울 수 없지만,
+            본 POC를 통해 <strong>단일 <code>.dcf</code> 기반의 2-Stage 분리(<code>#HAR-stage</code> / <code>#android-stage</code>), Rust <code>dc_layout</code> 엔진, HAR의 100% Data-Driven 렌더링(스칼라 + Variant 트리 스왑), 그리고 Heartbeat 기반 Native See-Through 합성</strong>까지 양산 아키텍처의 핵심 메커니즘을 그대로 검증할 수 있음을 확인했습니다.
+          </li>
+        </ol>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function toggleTheme() {
+      document.documentElement.classList.toggle('light');
+    }
+    function switchPart(mode) {
+      const p1 = document.getElementById('section-part1');
+      const p2 = document.getElementById('section-part2');
+      const bAll = document.getElementById('btn-all');
+      const bP1 = document.getElementById('btn-part1');
+      const bP2 = document.getElementById('btn-part2');
+
+      [bAll, bP1, bP2].forEach(b => {
+        b.classList.remove('tab-active');
+        b.classList.add('bg-[var(--card)]');
+      });
+
+      if (mode === 'part1') {
+        p1.style.display = 'block';
+        p2.style.display = 'none';
+        bP1.classList.add('tab-active');
+        bP1.classList.remove('bg-[var(--card)]');
+      } else if (mode === 'part2') {
+        p1.style.display = 'none';
+        p2.style.display = 'block';
+        bP2.classList.add('tab-active');
+        bP2.classList.remove('bg-[var(--card)]');
+      } else {
+        p1.style.display = 'block';
+        p2.style.display = 'block';
+        bAll.classList.add('tab-active');
+        bAll.classList.remove('bg-[var(--card)]');
+      }
+    }
+  </script>
+</body>
+</html>
