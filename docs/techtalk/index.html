@@ -331,95 +331,39 @@
           </div>
         </div>
 
-        <!-- Deep-Dive Q&A Cards: The three critical architectural questions -->
-        <div class="space-y-4 pt-2">
-
-          <!-- Q0 (NEW): Why not draw HAR on Android if both are QM? -->
-          <div class="p-5 rounded-xl border-2 border-blue-500/40 bg-[var(--background)] space-y-3">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="px-2.5 py-0.5 rounded text-xs font-bold bg-blue-500/20 text-blue-400">핵심 질문 Q1 · 가용성(Availability) vs 안전(Safety)</span>
-              <h4 class="font-bold text-sm md:text-base">어차피 HAR도 Safety Monitor 없이는 DriverUI처럼 QM인데, 그냥 Android 위에서 다 그리면 안 되는가?</h4>
-            </div>
-            <p class="text-xs md:text-sm text-[var(--muted-foreground)] leading-relaxed">
-              <strong>A. "둘 다 QM"이라는 말에 속으면 안 됩니다! Safety Monitor(ASIL-B)는 화면이 틀렸을 때 <em>감지(Detect)</em>만 할 뿐, 죽은 화면을 대신 그려주지 못합니다. HAR가 별도 VM으로 분리된 진짜 이유는 이름 그대로 <span class="text-emerald-400 font-bold">High Availability (고가용성 · Cold Boot 2초 표시 & 무중단 동작)</span> 때문입니다.</strong>
+        <!-- ASIL Decomposition & ROI Pixel Validation Summary Cards -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+          <!-- Card 1: ISO 26262-9 ASIL Decomposition -->
+          <div class="p-5 rounded-xl border border-purple-500/40 bg-[var(--background)] space-y-3">
+            <h4 class="font-bold text-sm text-purple-400">🛡️ ISO 26262-9 ASIL Decomposition (<code>QM(B) + ASIL B(B)</code>)</h4>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+              수백만 줄에 달하는 GPU 드라이버와 <code>Impeller</code> 그래픽 스택 전체를 ASIL-B로 인증받는 대신, 국제 표준 <strong>ISO 26262-9 (Clause 5)</strong>의 분해 원리를 적용합니다:
             </p>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
-              <div class="p-3 rounded-lg border border-[var(--border)] bg-[var(--card)]">
-                <div class="font-bold text-xs text-emerald-400 mb-1">① Cold Boot 법규 (1.5~2초 이내 표시)</div>
-                <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
-                  자동차 법규(FMVSS 101 등)상 시동 직후 기어를 넣으면 <strong>2초 이내</strong>에 속도계·경고등·후방 카메라가 켜져야 합니다. Android OS는 부팅에 <strong>15~30초</strong>가 걸리므로, 초경량 VM에서 1~2초 만에 켜지는 <strong>Rapid Boot 렌더러(HAR)</strong>가 필수입니다.
-                </p>
-              </div>
-              <div class="p-3 rounded-lg border border-[var(--border)] bg-[var(--card)]">
-                <div class="font-bold text-xs text-emerald-400 mb-1">② 주행 중 무중단 가용성 (Fail-Operational)</div>
-                <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
-                  주행 중 미디어/맵 앱 메모리 누수나 <code>SystemServer</code> 재시작으로 Android가 20초간 멈춰도, 고속도로를 달리는 운전자의 속도계와 브레이크 경고등은 <strong>단 1프레임도 꺼지면 안 됩니다.</strong>
-                </p>
-              </div>
-              <div class="p-3 rounded-lg border border-[var(--border)] bg-[var(--card)]">
-                <div class="font-bold text-xs text-emerald-400 mb-1">③ 실시간 결정성 (No GC / No Jitter)</div>
-                <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
-                  Android는 수많은 백그라운드 서비스와 가비지 컬렉션(GC)이 돌아 프레임 드랍이 발생할 수 있지만, HAR는 격리된 VM에서 <strong>순수 Rust 네이티브 코드</strong>로만 돌아 일정한 응답성을 보장합니다.
-                </p>
-              </div>
+            <ul class="text-xs text-[var(--muted-foreground)] space-y-1.5 list-disc pl-4 leading-relaxed">
+              <li><strong><code>QM(B)</code> 채널 — HAR</strong>: 복잡한 GPU/Impeller를 사용해 시동 후 1~2초 내 고가용성 렌더링 수행</li>
+              <li><strong><code>ASIL B(B)</code> 채널 — Safety Monitor</strong>: GPU 없이 순수 CPU로 프레임버퍼의 경고등 픽셀만 독립 검증</li>
+              <li><strong>하드웨어 Watchdog</strong>: 만약 VM2 자체가 멈추면 외부 Safety MCU / Display Controller가 타임아웃 감지</li>
+            </ul>
+            <div class="p-2.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs text-[var(--muted-foreground)]">
+              📚 <strong>공식 레퍼런스</strong>:
+              <a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain" target="_blank" class="underline text-blue-400">AOSP Safety Design Toolchain (TCL-3 / ASIL-B)</a> ·
+              <a href="https://en.wikipedia.org/wiki/Automotive_Safety_Integrity_Level#ASIL_decomposition" target="_blank" class="underline text-blue-400">ISO 26262-9 ASIL Decomposition</a>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Q1: Why same VM & ISO 26262-9 ASIL Decomposition -->
-            <div class="p-5 rounded-xl border-2 border-purple-500/40 bg-[var(--background)] space-y-3">
-              <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded text-xs font-bold bg-purple-500/20 text-purple-400">핵심 질문 Q2 · ASIL 분해</span>
-                <h4 class="font-bold text-sm">왜 Safety Monitor가 HAR와 같은 VM(VM2)에서 도는가? VM이 죽으면 둘 다 죽지 않나?</h4>
-              </div>
-              <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
-                <strong>A. 국제 표준 <span class="text-purple-400 font-bold">ISO 26262-9 (Clause 5: ASIL Decomposition)</span>의 <code>QM(B) + ASIL B(B)</code> 분해 아키텍처이며, 소프트웨어 버그와 VM 다운은 감시 주체가 다릅니다!</strong>
-              </p>
-              <ul class="text-xs text-[var(--muted-foreground)] space-y-2 list-disc pl-4 leading-relaxed">
-                <li>
-                  <strong>ISO 26262-9 공식 표기법 <code>ASIL B = QM(B) + ASIL B(B)</code></strong>:<br/>
-                  원래 <strong>ASIL B</strong>가 요구되는 계기판 표시 기능을 두 개의 독립 채널로 분해합니다:
-                  <ul class="list-disc pl-4 mt-1 space-y-1">
-                    <li><strong><code>QM(B)</code> 채널 — HAR (복잡한 GPU 렌더링)</strong>: 수백만 줄의 GPU 드라이버와 <code>Impeller</code> 셰이더를 그대로 사용하여 빠르게 화면을 그림</li>
-                    <li><strong><code>ASIL B(B)</code> 채널 — Safety Monitor (단순 픽셀 검증)</strong>: GPU를 전혀 쓰지 않는 작고 엄격한 MISRA-C/Rust 코드로 프레임버퍼의 경고등 픽셀만 읽어 검증함</li>
-                  </ul>
-                </li>
-                <li>
-                  <strong>VM2 전체 다운/프리징 감시 (외부 Safety MCU 하드웨어 Watchdog)</strong>:<br/>
-                  만약 <code>SDV Media VM</code> 자체가 커널 패닉에 빠지면 Safety Monitor도 멈추며, 이때는 <strong>외부 하드웨어 Safety MCU(마이컴) / SoC Display Controller CRC 체커</strong>가 Watchdog 타임아웃을 감지해 하드웨어 안전 조치를 수행합니다.
-                </li>
-              </ul>
-              <div class="p-2.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs text-[var(--muted-foreground)]">
-                📚 <strong>ASIL Decomposition 공식 레퍼런스 문서</strong>:
-                <ul class="list-disc pl-4 mt-1 space-y-0.5">
-                  <li><strong>ISO 26262-9:2018 Clause 5</strong> — <em>"Requirements decomposition with respect to ASIL tailoring"</em> (<code>ASIL B → ASIL B(B) + QM(B)</code> 규격 정의)</li>
-                  <li><a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain" target="_blank" class="underline text-blue-400">AOSP Safety Design Toolchain 공식 문서</a> — Design Compiler와 Code Generator 분리를 통한 <strong>ISO-26262 TCL-3 / ASIL-B</strong> 달성 명시</li>
-                  <li><a href="https://en.wikipedia.org/wiki/Automotive_Safety_Integrity_Level#ASIL_decomposition" target="_blank" class="underline text-blue-400">Wikipedia: ASIL Decomposition 개요</a></li>
-                </ul>
-              </div>
-            </div>
-
-            <!-- Q2: How to compare static Golden Image against dynamic 60fps screen? -->
-            <div class="p-5 rounded-xl border-2 border-emerald-500/40 bg-[var(--background)] space-y-3">
-              <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400">핵심 질문 Q3 · 픽셀 비교 원리</span>
-                <h4 class="font-bold text-sm">골든 이미지는 정적(Static) 이미지인데, 실시간으로 변하는 화면과 어떻게 픽셀 비교를 하는가?</h4>
-              </div>
-              <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
-                <strong>A. 전체 화면(1920×720)을 비교하는 것이 아니라, 오직 고정 좌표의 작은 경고등 영역(ROI Bounding Box)만 잘라 투명 픽셀을 제외하고 비교합니다!</strong>
-              </p>
-              <ul class="text-xs text-[var(--muted-foreground)] space-y-2 list-disc pl-4 leading-relaxed">
-                <li>
-                  <strong>① 작은 사각형(Bounding Box) ROI 크롭 비교</strong>:<br/>
-                  속도 숫자나 게이지 바늘이 움직이는 영역은 검사하지 않습니다. <code>data.json</code>에 기록된 고정 좌표(예: <code>X: 72, Y: 674, Width: 45, Height: 45</code>)의 <strong>45×45 픽셀 조각(안전벨트, ABS 등 Telltale 아이콘 위치)</strong>만 읽습니다.
-                </li>
-                <li>
-                  <strong>② 투명 픽셀 마스킹 (Alpha Masking)</strong>:<br/>
-                  AOSP 공식 문서 명시: <em>"The safety monitor might ignore the transparent pixels in these images for the purposes of run-time pixel tests."</em><br/>
-                  즉, 45×45 골든 이미지에서 <strong>투명한 배경 픽셀(<code>alpha == 0</code>)은 무시</strong>하고, <strong>불투명한 빨간색/노란색 아이콘 획(Stroke) 픽셀만</strong> 실제 프레임버퍼 픽셀과 대조합니다.
-                </li>
-              </ul>
-            </div>
+          <!-- Card 2: Bounding-Box ROI & Alpha Masking + Mismatch Handling -->
+          <div class="p-5 rounded-xl border border-emerald-500/40 bg-[var(--background)] space-y-3">
+            <h4 class="font-bold text-sm text-emerald-400">🔍 정적 Golden Image 픽셀 비교 원리 & Mismatch 감지 시 동작</h4>
+            <ul class="text-xs text-[var(--muted-foreground)] space-y-2 list-disc pl-4 leading-relaxed">
+              <li>
+                <strong>고정 좌표 ROI Crop & Alpha Masking</strong>:<br/>
+                전체 화면(1920×720)이 아니라 <code>data.json</code>에 정의된 경고등 사각형(예: <code>X:72, Y:674, 45×45</code>)만 잘라내며, <strong>투명 배경 픽셀(<code>alpha == 0</code>)은 무시</strong>하고 불투명 아이콘 픽셀만 대조합니다.
+              </li>
+              <li>
+                <strong>오류(Mismatch) 감지 시 동작 (AOSP 공식 문서 기준)</strong>:<br/>
+                공식 문서상 레퍼런스 <code>har_safety_monitor</code>의 역할은 <em>"Mismatch detection: Logs an error if there is a mismatch between what is expected based on vehicle data and what is visible on screen"</em>까지만 정의되어 있습니다. 즉, Safety Monitor가 HAR에게 "다시 그려라"라고 수정시키는 것이 아니라, <strong>플랫폼 안전 관리자(Safety Manager / Safety MCU)에 Fault를 보고하여 OEM의 안전 상태(Safe State: 디스플레이 리셋, 하드웨어 Fallback 경고등 점등, 청각 경고음 출력 등)로 전환</strong>하도록 위임합니다.
+              </li>
+            </ul>
           </div>
         </div>
 
