@@ -361,7 +361,7 @@
               </li>
               <li>
                 <strong>오류(Mismatch) 감지 시 동작 (AOSP 공식 문서 기준)</strong>:<br/>
-                공식 문서상 레퍼런스 <code>har_safety_monitor</code>의 역할은 <em>"Mismatch detection: Logs an error if there is a mismatch between what is expected based on vehicle data and what is visible on screen"</em>까지만 정의되어 있습니다. 즉, Safety Monitor가 HAR에게 "다시 그려라"라고 수정시키는 것이 아니라, <strong>플랫폼 안전 관리자(Safety Manager / Safety MCU)에 Fault를 보고하여 OEM의 안전 상태(Safe State: 디스플레이 리셋, 하드웨어 Fallback 경고등 점등, 청각 경고음 출력 등)로 전환</strong>하도록 위임합니다.
+                공식 문서상 레퍼런스 <code>har_safety_monitor</code>의 역할은 <em>"Mismatch detection: Logs an error if there is a mismatch between what is expected based on vehicle data and what is visible on screen"</em>으로 명확히 한정되어 있습니다. 즉, Safety Monitor는 화면을 직접 수정하지 않는 <strong>순수 Read-Only 감시 프로세스</strong>로서 픽셀 불일치 발생 시 에러를 기록·보고하는 역할만 수행합니다.
               </li>
             </ul>
           </div>
