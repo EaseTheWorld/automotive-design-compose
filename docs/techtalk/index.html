@@ -356,6 +356,10 @@
             <h4 class="font-bold text-sm text-emerald-400">🔍 정적 Golden Image 픽셀 비교 원리 & Mismatch 감지 시 동작</h4>
             <ul class="text-xs text-[var(--muted-foreground)] space-y-2 list-disc pl-4 leading-relaxed">
               <li>
+                <strong>빌드 타임 1회 생성 & C 헤더(<code>.h</code>) 상수 내장</strong>:<br/>
+                Golden Image는 주행 중(런타임) 차량 데이터가 바뀔 때마다 새로 만드는 것이 <strong>아닙니다</strong>. 검사 대상인 Telltale 아이콘들은 <code>ON/OFF</code> 두 상태만 가지므로, <strong>빌드 타임에 각 아이콘이 켜졌을 때의 정적 이미지를 딱 1장씩만 추출해 C 헤더 파일 상수로 바이너리에 내장</strong>합니다. 런타임에는 차량 신호(<code>ON/OFF</code>)에 따라 내장된 Golden Image와 일치하는지만 대조합니다.
+              </li>
+              <li>
                 <strong>고정 좌표 ROI Crop & Alpha Masking</strong>:<br/>
                 전체 화면(1920×720)이 아니라 <code>data.json</code>에 정의된 경고등 사각형(예: <code>X:72, Y:674, 45×45</code>)만 잘라내며, <strong>투명 배경 픽셀(<code>alpha == 0</code>)은 무시</strong>하고 불투명 아이콘 픽셀만 대조합니다.
               </li>
