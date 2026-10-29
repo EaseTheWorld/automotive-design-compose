@@ -109,67 +109,90 @@
           1부. Android 공식 문서로 보는 SDV Display Safety 아키텍처
         </h2>
         <p class="text-sm text-[var(--muted-foreground)] mt-1">
-          출처:
-          <a href="https://source.android.com/docs/automotive/sdv/display-safety" target="_blank" class="underline">Display Safety 개요</a> ·
-          <a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui" target="_blank" class="underline">DriverUI 아키텍처</a> ·
-          <a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain" target="_blank" class="underline">Safety Design Toolchain</a>
+          공식 문서 바로가기:
+          <a href="https://source.android.com/docs/automotive/sdv/display-safety" target="_blank" class="underline text-blue-400">Display Safety 개요</a> ·
+          <a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui" target="_blank" class="underline text-blue-400">DriverUI 아키텍처</a> ·
+          <a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain" target="_blank" class="underline text-blue-400">Safety Design Toolchain</a> ·
+          <a href="https://source.android.com/docs/automotive/sdv/display-safety/har-pal" target="_blank" class="underline text-blue-400">HAR PAL</a>
         </p>
       </div>
 
       <!-- Slide 1.1: Why Display Safety & 3 Core Components -->
       <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm space-y-6">
         <div class="flex items-center justify-between flex-wrap gap-2">
-          <h3 class="text-lg font-bold">1-1. 왜 Display Safety인가? (3대 핵심 컴포넌트와 Dual-VM 분리)</h3>
-          <span class="text-xs px-2.5 py-1 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">ISO 26262 ASIL-B + QM 공존</span>
+          <h3 class="text-lg font-bold">
+            1-1. 왜 Display Safety인가? (3대 핵심 컴포넌트와 Dual-VM 분리)
+          </h3>
+          <div class="flex flex-wrap gap-1.5 text-xs">
+            <a href="https://source.android.com/docs/automotive/sdv/display-safety#architecture" target="_blank" class="px-2.5 py-1 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:underline">
+              🔗 display-safety#architecture
+            </a>
+            <a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#platforms" target="_blank" class="px-2.5 py-1 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:underline">
+              🔗 driverui#platforms
+            </a>
+          </div>
         </div>
 
         <p class="text-sm text-[var(--muted-foreground)] leading-relaxed">
-          최신 콕핏 도메인 컨트롤러(Cockpit Domain Controller)는 클러스터(계기판)와 IVI(인포테인먼트)를 하나의 통합 디스플레이 환경으로 결합합니다.
+          최신 콕핏 도메인 컨트롤러(Cockpit Domain Controller)는 클러스터(계기판)와 IVI(인포테인먼트)를 하나의 통합 디스플레이 환경으로 결합합니다(<a href="https://source.android.com/docs/automotive/sdv/display-safety" target="_blank" class="underline text-blue-400">Display Safety 개요</a>).
           하지만 Android(AAOS) 단독으로는 <strong>Cold Boot 즉시 표시(Rapid Boot)</strong>와 <strong>기능 안전(ISO 26262 ASIL-B)</strong>을 보장하기 어렵기 때문에,
-          AOSP Display Safety는 시스템을 <strong>두 개의 Guest VM</strong>과 <strong>3대 소프트웨어 컴포넌트</strong>로 분리합니다.
+          AOSP Display Safety는 시스템을 <strong>두 개의 Guest VM</strong>(<a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#platforms" target="_blank" class="underline text-blue-400">SDV Platforms</a>)과 <strong>3대 소프트웨어 컴포넌트</strong>(<a href="https://source.android.com/docs/automotive/sdv/display-safety#architecture" target="_blank" class="underline text-blue-400">Display Safety components</a>)로 분리합니다.
         </p>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
           <div class="bg-white rounded-xl p-4 border border-[var(--border)]">
             <img src="aosp_display-safety-06.png" alt="AOSP Cluster Overview" class="w-full rounded-lg mb-3" />
-            <p class="text-xs text-slate-600 text-center font-medium">▲ [AOSP 공식 그림] 클러스터와 IVI가 결합된 현대적 DriverUI 화면 예시</p>
+            <p class="text-xs text-slate-600 text-center font-medium">
+              ▲ [AOSP 공식 그림] 클러스터와 IVI가 결합된 현대적 DriverUI 화면 예시 (<a href="https://source.android.com/docs/automotive/sdv/display-safety" target="_blank" class="underline text-blue-600">Figure 1</a>)
+            </p>
           </div>
           <div class="bg-white rounded-xl p-4 border border-[var(--border)]">
             <img src="aosp_display-safety-01.png" alt="Display Safety Components Dual VM" class="w-full rounded-lg mb-3" />
-            <p class="text-xs text-slate-600 text-center font-medium">▲ [AOSP 공식 그림] Guest VM2 (SDV Media: HAR + Safety Monitor) vs Guest VM1 (SDV-IVI: DriverUI)</p>
+            <p class="text-xs text-slate-600 text-center font-medium">
+              ▲ [AOSP 공식 그림] Guest VM2 (SDV Media: HAR + Safety Monitor) vs Guest VM1 (SDV-IVI: DriverUI) (<a href="https://source.android.com/docs/automotive/sdv/display-safety#architecture" target="_blank" class="underline text-blue-600">Figure 2</a>)
+            </p>
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
           <div class="p-4 rounded-xl border border-emerald-500/40 bg-[var(--background)]">
-            <div class="text-xs font-bold text-emerald-500 mb-1">Guest VM 2 · SDV Media (Rapid Boot VM)</div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-emerald-500">Guest VM 2 · SDV Media (Rapid Boot VM)</span>
+              <a href="https://source.android.com/docs/automotive/sdv/display-safety#high-availability" target="_blank" class="text-xs text-blue-400 underline">#high-availability</a>
+            </div>
             <h4 class="font-bold text-sm mb-2">① HAR (High Availability Renderer)</h4>
             <div class="text-xs font-semibold text-emerald-400 mb-2">🎯 핵심 목적: 고가용성(High Availability) & Cold Boot 즉시 표시</div>
             <ul class="text-xs text-[var(--muted-foreground)] space-y-1.5 list-disc pl-4">
               <li><strong>왜 별도 VM인가?</strong> Android는 부팅에 15~30초가 걸리고 앱/시스템 크래시로 재부팅될 수 있음. 반면 HAR는 초경량 VM 위에서 <strong>시동 직후 1~2초 내(Cold Boot) 즉시 켜지고 절대 죽지 않음</strong></li>
-              <li><strong>언어/렌더러</strong>: 가비지 컬렉션(GC) 없는 순수 <strong>Rust</strong> + <strong>Impeller</strong> GPU 렌더러</li>
-              <li><strong>역할</strong>: 속도, RPM, 경고등(Telltales), 후방 카메라 및 Android 부팅/장애 시 Fallback 배경 렌더링</li>
+              <li><strong>언어/렌더러</strong>: 가비지 컬렉션(GC) 없는 순수 <strong>Rust</strong> + <strong>Impeller</strong> GPU 렌더러 및 <a href="https://source.android.com/docs/automotive/sdv/display-safety/har-pal#platform-abstraction-layer-description" target="_blank" class="underline text-blue-400">PAL(Platform Abstraction Layer)</a></li>
+              <li><strong>역할</strong>: 속도, RPM, 경고등(Telltales), 후방 카메라 및 Android 부팅/장애 시 Fallback 플레이스홀더 렌더링</li>
             </ul>
           </div>
 
           <div class="p-4 rounded-xl border border-blue-500/40 bg-[var(--background)]">
-            <div class="text-xs font-bold text-blue-500 mb-1">Guest VM 1 · SDV-IVI (Android VM)</div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-blue-500">Guest VM 1 · SDV-IVI (Android VM)</span>
+              <a href="https://source.android.com/docs/automotive/sdv/display-safety#driverui" target="_blank" class="text-xs text-blue-400 underline">#driverui</a>
+            </div>
             <h4 class="font-bold text-sm mb-2">② DriverUI (Android System App)</h4>
             <div class="text-xs font-semibold text-blue-400 mb-2">🎯 핵심 목적: 풍부한 인포테인먼트(Rich IVI 생태계)</div>
             <ul class="text-xs text-[var(--muted-foreground)] space-y-1.5 list-disc pl-4">
-              <li><strong>프레임워크</strong>: AAOS <code>ClusterHomeManager</code> (Cluster 2 API) + <strong>Automotive Design for Compose</strong></li>
-              <li><strong>역할</strong>: HAR가 그리는 안전 요소를 제외한 나머지 전체 클러스터 화면(미디어, 전화, 내비게이션, 날씨 등) 렌더링</li>
-              <li>부팅이 완료되면 주기적으로 HAR에 <code>HeartbeatRequest</code> RPC를 전송하여 생존 상태를 알림</li>
+              <li><strong>프레임워크</strong>: AAOS <a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#cluster-activity" target="_blank" class="underline text-blue-400"><code>ClusterHomeManager</code> (Cluster 2 API)</a> + <a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#adc-integration" target="_blank" class="underline text-blue-400">Automotive Design for Compose</a></li>
+              <li><strong>역할</strong>: HAR가 그리는 안전 요소를 제외한 나머지 전체 클러스터 화면(<a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#maps-media-telephony" target="_blank" class="underline text-blue-400">Maps, Telephony, Media 우선순위 표시</a>) 렌더링</li>
+              <li>부팅 완료 후 주기적으로 HAR에 <a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#communication" target="_blank" class="underline text-blue-400"><code>HeartbeatRequest</code> RPC</a>를 전송하여 생존 상태를 알림</li>
             </ul>
           </div>
 
           <div class="p-4 rounded-xl border border-purple-500/40 bg-[var(--background)]">
-            <div class="text-xs font-bold text-purple-500 mb-1">Guest VM 2 · ASIL-B 무결성 검증</div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-purple-500">Guest VM 2 · ASIL-B 무결성 검증</span>
+              <a href="https://source.android.com/docs/automotive/sdv/display-safety#safety-designtoolchain" target="_blank" class="text-xs text-blue-400 underline">#safety-designtoolchain</a>
+            </div>
             <h4 class="font-bold text-sm mb-2">③ Safety Design Toolchain & Monitor</h4>
             <div class="text-xs font-semibold text-purple-400 mb-2">🎯 핵심 목적: 기능 안전 무결성(Safety Integrity · ASIL-B)</div>
             <ul class="text-xs text-[var(--muted-foreground)] space-y-1.5 list-disc pl-4">
-              <li><strong>핵심 가치</strong>: HAR가 빠르게 그린 화면이 GPU/셰이더 버그로 깨지지 않았는지 <strong>최종 프레임버퍼 픽셀을 감시하여 ASIL-B 달성</strong></li>
-              <li>단일 Figma 디자인(<code>.dcf</code>)에서 안전 중요 노드(Telltales) 좌표와 정답 이미지를 추출해 <strong>ISO-26262 TCL-3</strong> 등급의 검증 코드 생성</li>
+              <li><strong>핵심 가치</strong>: HAR가 빠르게 그린 화면이 GPU/셰이더 버그로 깨지지 않았는지 <a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#reference-safety-monitor" target="_blank" class="underline text-blue-400">최종 프레임버퍼 픽셀을 감시(Safety Monitor)</a>하여 ASIL-B 달성</li>
+              <li>단일 Figma 디자인(<code>.dcf</code>)에서 안전 중요 노드(Telltales) 좌표와 정답 이미지를 추출해 <a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain" target="_blank" class="underline text-blue-400">ISO-26262 TCL-3 등급의 검증 코드 생성</a></li>
             </ul>
           </div>
         </div>
@@ -178,7 +201,7 @@
         <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)]">
           <h4 class="font-bold text-xs md:text-sm mb-2">💡 한눈에 구분하는 3대 컴포넌트의 존재 이유 (Availability vs Safety vs Richness)</h4>
           <p class="text-xs text-[var(--muted-foreground)] mb-3">
-            AOSP 문서에서 DriverUI와 HAR는 둘 다 <strong>QM(Quality Management, 일반 품질 등급)</strong>으로 분류되지만, <strong>존재 이유(비기능 요구사항)가 완전히 다릅니다!</strong>
+            AOSP 문서(<a href="https://source.android.com/docs/automotive/sdv/display-safety#terminology" target="_blank" class="underline text-blue-400">#terminology</a>, <a href="https://source.android.com/docs/automotive/sdv/display-safety#architecture" target="_blank" class="underline text-blue-400">#architecture</a>)에서 DriverUI와 HAR는 둘 다 <strong>QM(Quality Management, 일반 품질 등급)</strong> 프로세스로 분류되지만, <strong>존재 이유(비기능 요구사항)가 완전히 다릅니다!</strong>
           </p>
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs">
@@ -219,111 +242,77 @@
         </div>
       </div>
 
-      <!-- Slide 1.2: Blending HAR & DriverUI + Heartbeat + Alpha Punch-through -->
+      <!-- Slide 1.2 (Moved Up!): Deep Dive into Safety Design Toolchain & Safety Monitor -->
       <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm space-y-6">
         <div class="flex items-center justify-between flex-wrap gap-2">
-          <h3 class="text-lg font-bold">1-2. HAR + DriverUI 화면 합성(Blending)과 Heartbeat 메커니즘</h3>
-          <span class="text-xs px-2.5 py-1 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">Hardware Display Plane Compositing</span>
-        </div>
-
-        <div class="bg-white rounded-xl p-5 border border-[var(--border)]">
-          <img src="aosp_display-safety-05.png" alt="HAR and DriverUI Composition" class="w-full max-w-4xl mx-auto rounded-lg mb-3" />
-          <p class="text-xs text-slate-600 text-center font-medium">
-            ▲ [AOSP 공식 그림] 상단 HAR (SDV VM) + 하단 DriverUI (AAOS IVI VM) → Hypervisor / SoC Display Controller가 하나의 화면으로 합성
-          </p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] space-y-2">
-            <h4 class="font-bold text-sm">💓 Heartbeat 기반 투명도(Transparency) 제어</h4>
-            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
-              HAR의 하드웨어 디스플레이 플레인은 안전 중요도 때문에 <strong>항상 Android IVI 플레인 위(Top Layer)</strong>에 위치합니다.
-            </p>
-            <ul class="text-xs text-[var(--muted-foreground)] space-y-1.5 list-disc pl-4">
-              <li><strong>정상 상태 (Heartbeat 수신 중)</strong>: DriverUI가 주기적으로 <code>HeartbeatRequest</code> RPC를 보내면, HAR는 플레이스홀더/배경을 제거하고 Android 출력 영역을 <strong>완전 투명(<code>alpha = 0.0</code>)</strong>으로 비워 하단 DriverUI가 투과(See-Through)되게 합니다.</li>
-              <li><strong>장애/부팅 상태 (Heartbeat 끊김)</strong>: DriverUI로부터 Heartbeat가 끊기면 HAR가 즉시 배경 영역을 <strong>불투명(<code>alpha = 1.0</code>)</strong>하게 채우고 자체 안전 UI와 플레이스홀더를 표시합니다.</li>
-            </ul>
+          <h3 class="text-lg font-bold">1-2. [심층 분석] Safety Design Toolchain & Safety Monitor</h3>
+          <div class="flex flex-wrap gap-1.5 text-xs">
+            <a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain" target="_blank" class="px-2.5 py-1 rounded bg-purple-500/20 text-purple-400 border border-purple-500/40 font-semibold hover:underline">
+              🔗 toolchain 전체 문서
+            </a>
+            <a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#reference-safety-monitor" target="_blank" class="px-2.5 py-1 rounded bg-purple-500/20 text-purple-400 border border-purple-500/40 font-semibold hover:underline">
+              🔗 #reference-safety-monitor
+            </a>
           </div>
-
-          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] space-y-2">
-            <h4 class="font-bold text-sm">🔍 공식 문서가 강조하는 Alpha 합성 및 Cross-VM 주의사항</h4>
-            <ul class="text-xs text-[var(--muted-foreground)] space-y-1.5 list-disc pl-4">
-              <li><strong>Alpha Punch-Through</strong>: HAR가 그리는 게이지/3D 요소는 반드시 <code>alpha = 1.0 (0xFF)</code>이어야 하며, 나머지 영역은 <code>alpha = 0.0</code>으로 클리어되어야 하단 Android 레이어가 보입니다.</li>
-              <li><strong>Cross-VM 디버깅 한계</strong>: HAR(<code>sdv_media_har_cf</code>)와 Android IVI(<code>sdv_ivi_cf_ds</code>)는 서로 다른 Guest VM에서 돌기 때문에, Android에서 <code>adb shell dumpsys SurfaceFlinger</code>를 실행해도 상단 HAR 레이어는 보이지 않습니다.</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <!-- Slide 1.3: Inter-VM RPC & Live Figma Sync -->
-      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm space-y-6">
-        <div class="flex items-center justify-between flex-wrap gap-2">
-          <h3 class="text-lg font-bold">1-3. 단일 Figma 문서 동기화(SDVGateway) 및 테마 RPC 연동</h3>
-          <span class="text-xs px-2.5 py-1 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">Single Source of Truth (.dcf)</span>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
-          <div class="bg-white rounded-xl p-4 border border-[var(--border)]">
-            <img src="aosp_driver-ui-04.png" alt="Live update of design document from Figma to DriverUI and HAR" class="w-full rounded-lg mb-2" />
-            <p class="text-xs text-slate-600 text-center font-medium">
-              ▲ [AOSP 공식 그림] Figma Cloud → DriverUI 로컬 <code>.dcf</code> 업데이트 후 <code>SDVGateway</code>를 통해 VM2(HAR)의 로컬 <code>.dcf</code>까지 동시 동기화
-            </p>
-          </div>
-          <div class="bg-white rounded-xl p-4 border border-[var(--border)]">
-            <img src="aosp_driver-ui-03.png" alt="RPC communication to change both DriverUI and HAR theme" class="w-full rounded-lg mb-2" />
-            <p class="text-xs text-slate-600 text-center font-medium">
-              ▲ [AOSP 공식 그림] RPC를 통해 DriverUI와 HAR의 테마(Variable Mode)를 동시에 전환
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Slide 1.4: Deep Dive into Safety Design Toolchain & Safety Monitor -->
-      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm space-y-6">
-        <div class="flex items-center justify-between flex-wrap gap-2">
-          <h3 class="text-lg font-bold">1-4. [심층 해설] Safety Design Toolchain & Safety Monitor란 무엇인가?</h3>
-          <span class="text-xs px-2.5 py-1 rounded bg-purple-500/20 text-purple-400 border border-purple-500/40 font-semibold">ISO 26262 ASIL-B & TCL-3</span>
         </div>
 
         <p class="text-sm text-[var(--muted-foreground)] leading-relaxed">
           자동차 기능 안전 표준(ISO 26262 ASIL-B)에서는 <strong>"차량 버스에서 브레이크/안전벨트 경고등 신호(ON)를 보냈을 때, 렌더러 버그나 레이어 가림 없이 실제 화면 픽셀에 경고등이 제대로 찍혔는가?"</strong>를 검증해야 합니다.
-          이를 위해 AOSP는 <strong>그리는 프로세스(HAR)</strong>와 <strong>검사하는 프로세스(Safety Monitor)</strong>를 분리하고, 동일한 Figma <code>.dcf</code> 파일에서 검사 기준(좌표 + 정답 픽셀)을 자동 추출하는 <strong>Safety Design Toolchain</strong>을 제공합니다.
+          이를 위해 AOSP는 <strong>그리는 프로세스(HAR)</strong>와 <strong>검사하는 프로세스(<a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#reference-safety-monitor" target="_blank" class="underline text-blue-400">Safety Monitor</a>)</strong>를 분리하고, 동일한 Figma <code>.dcf</code> 파일에서 검사 기준(좌표 + 정답 픽셀)을 자동 추출하는 <strong><a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain" target="_blank" class="underline text-blue-400">Safety Design Toolchain</a></strong>을 제공합니다.
         </p>
 
         <div class="bg-white rounded-xl p-4 border border-[var(--border)] space-y-3">
           <img src="aosp_display-safety-02.png" alt="Safety design toolchain steps" class="w-full max-w-3xl mx-auto rounded-lg" />
           <img src="aosp_toolchain-02.png" alt="Safety design toolchain detailed workflow" class="w-full max-w-4xl mx-auto rounded-lg" />
           <p class="text-xs text-slate-600 text-center font-medium">
-            ▲ [AOSP 공식 그림] Safety Design Toolchain 파이프라인: Figma <code>.dcf</code> + <code>Config.json</code> → Safety Design Compiler → 엔지니어 육안 검수(HTML Report) 및 SHA-256 승인 토큰 → MISRA-C Safety Monitor 빌드
+            ▲ [AOSP 공식 그림] Safety Design Toolchain 파이프라인 (<a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain" target="_blank" class="underline text-blue-600">Figure 1 & Figure 2</a>): Figma <code>.dcf</code> + <code>Config.json</code> → Safety Design Compiler → 엔지니어 육안 검수(HTML Report) 및 SHA-256 승인 토큰 → MISRA-C Safety Monitor 빌드
           </p>
         </div>
 
-        <!-- 4-Step Pipeline Breakdown -->
+        <!-- 4-Step Pipeline Breakdown with exact anchors -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div class="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)]">
-            <div class="text-xs font-bold text-blue-500 mb-1">Step 1 · 입력 정의</div>
-            <div class="font-bold text-xs mb-1"><code>.dcf</code> + <code>Config.json</code></div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-blue-500">Step 1 · 입력 정의</span>
+              <a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#json-config" target="_blank" class="text-xs text-blue-400 underline">#json-config</a>
+            </div>
+            <div class="font-bold text-xs mb-1">
+              <a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#design-compiler-inputs" target="_blank" class="hover:underline"><code>.dcf</code> + <code>Config.json</code></a>
+            </div>
             <p class="text-xs text-[var(--muted-foreground)]">
               차량 신호 이름과 Figma 경고등 노드를 매핑합니다.<br/>
               예: <code>"seatbelts": "#cluster/telltale/no-seatbelt"</code>
             </p>
           </div>
           <div class="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)]">
-            <div class="text-xs font-bold text-blue-500 mb-1">Step 2 · Design Compiler</div>
-            <div class="font-bold text-xs mb-1">Headless Impeller 추출</div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-blue-500">Step 2 · Design Compiler</span>
+              <a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#design-compiler-output" target="_blank" class="text-xs text-blue-400 underline">#design-compiler-output</a>
+            </div>
+            <div class="font-bold text-xs mb-1">
+              <a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#exported-design-images" target="_blank" class="hover:underline">Headless Impeller 추출</a>
+            </div>
             <p class="text-xs text-[var(--muted-foreground)]">
-              <code>.dcf</code>를 렌더링하며 각 경고등의 정확한 Bounding Box 좌표(<code>data.json</code>)와 조각 이미지(Golden Image PNG)를 추출합니다.
+              <code>.dcf</code>를 렌더링하며 각 경고등의 정확한 Bounding Box 좌표(<code>data.json</code>)와 조각 이미지(<a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#exported-design-images" target="_blank" class="underline text-blue-400">Exported design images</a>)를 추출합니다.
             </p>
           </div>
           <div class="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)]">
-            <div class="text-xs font-bold text-amber-500 mb-1">Step 3 · HRR 승인 (TCL-3)</div>
-            <div class="font-bold text-xs mb-1">Human-Readable Report</div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-amber-500">Step 3 · HRR 승인 (TCL-3)</span>
+              <a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#safety-approval-tool" target="_blank" class="text-xs text-blue-400 underline">#safety-approval-tool</a>
+            </div>
+            <div class="font-bold text-xs mb-1">
+              <a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#human-readable-report-generator" target="_blank" class="hover:underline">Human-Readable Report</a>
+            </div>
             <p class="text-xs text-[var(--muted-foreground)]">
-              안전 엔지니어가 HTML 리포트의 좌표·스크린샷을 육안 검수 후 <code>approve-hrr</code>로 SHA-256 승인 토큰을 발급합니다.
+              안전 엔지니어가 HTML 리포트의 좌표·스크린샷을 육안 검수 후 <code>approve-hrr</code>로 SHA-256 승인 토큰(<code>approval_file.json</code>)을 발급합니다.
             </p>
           </div>
           <div class="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)]">
-            <div class="text-xs font-bold text-emerald-500 mb-1">Step 4 · 코드 생성 & 감시</div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-emerald-500">Step 4 · 코드 생성 & 감시</span>
+              <a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#reference-safety-monitor" target="_blank" class="text-xs text-blue-400 underline">#reference-safety-monitor</a>
+            </div>
             <div class="font-bold text-xs mb-1"><code>har_safety_monitor</code></div>
             <p class="text-xs text-[var(--muted-foreground)]">
               승인된 Golden Image를 C 헤더/바이너리로 컴파일하여, 런타임에 실제 화면 픽셀과 실시간 대조합니다.
@@ -340,8 +329,8 @@
               수백만 줄에 달하는 GPU 드라이버와 <code>Impeller</code> 그래픽 스택 전체를 ASIL-B로 인증받는 대신, 국제 표준 <strong>ISO 26262-9 (Clause 5)</strong>의 분해 원리를 적용합니다:
             </p>
             <ul class="text-xs text-[var(--muted-foreground)] space-y-1.5 list-disc pl-4 leading-relaxed">
-              <li><strong><code>QM(B)</code> 채널 — HAR</strong>: 복잡한 GPU/Impeller를 사용해 시동 후 1~2초 내 고가용성 렌더링 수행</li>
-              <li><strong><code>ASIL B(B)</code> 채널 — Safety Monitor</strong>: GPU 없이 순수 CPU로 프레임버퍼의 경고등 픽셀만 독립 검증</li>
+              <li><strong><code>QM(B)</code> 채널 — <a href="https://source.android.com/docs/automotive/sdv/display-safety#high-availability" target="_blank" class="underline text-blue-400">HAR</a></strong>: 복잡한 GPU/Impeller를 사용해 시동 후 1~2초 내 고가용성 렌더링 수행</li>
+              <li><strong><code>ASIL B(B)</code> 채널 — <a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#reference-safety-monitor" target="_blank" class="underline text-blue-400">Safety Monitor</a></strong>: GPU 없이 순수 CPU로 프레임버퍼의 경고등 픽셀만 독립 검증</li>
               <li><strong>하드웨어 Watchdog</strong>: 만약 VM2 자체가 멈추면 외부 Safety MCU / Display Controller가 타임아웃 감지</li>
             </ul>
             <div class="p-2.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs text-[var(--muted-foreground)]">
@@ -356,15 +345,15 @@
             <h4 class="font-bold text-sm text-emerald-400">🔍 정적 Golden Image 픽셀 비교 원리 & Mismatch 감지 시 동작</h4>
             <ul class="text-xs text-[var(--muted-foreground)] space-y-2 list-disc pl-4 leading-relaxed">
               <li>
-                <strong>빌드 타임 1회 생성 & C 헤더(<code>.h</code>) 상수 내장</strong>:<br/>
+                <strong>빌드 타임 1회 생성 & C 헤더(<code>.h</code>) 상수 내장 (<a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#exported-design-images" target="_blank" class="underline text-blue-400">#exported-design-images</a>)</strong>:<br/>
                 Golden Image는 주행 중(런타임) 차량 데이터가 바뀔 때마다 새로 만드는 것이 <strong>아닙니다</strong>. 검사 대상인 Telltale 아이콘들은 <code>ON/OFF</code> 두 상태만 가지므로, <strong>빌드 타임에 각 아이콘이 켜졌을 때의 정적 이미지를 딱 1장씩만 추출해 C 헤더 파일 상수로 바이너리에 내장</strong>합니다. 런타임에는 차량 신호(<code>ON/OFF</code>)에 따라 내장된 Golden Image와 일치하는지만 대조합니다.
               </li>
               <li>
-                <strong>고정 좌표 ROI Crop & Alpha Masking</strong>:<br/>
+                <strong>고정 좌표 ROI Crop & Alpha Masking (<a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#design-compiler-output" target="_blank" class="underline text-blue-400">#design-compiler-output</a>)</strong>:<br/>
                 전체 화면(1920×720)이 아니라 <code>data.json</code>에 정의된 경고등 사각형(예: <code>X:72, Y:674, 45×45</code>)만 잘라내며, <strong>투명 배경 픽셀(<code>alpha == 0</code>)은 무시</strong>하고 불투명 아이콘 픽셀만 대조합니다.
               </li>
               <li>
-                <strong>오류(Mismatch) 감지 시 동작 (AOSP 공식 문서 기준)</strong>:<br/>
+                <strong>오류(Mismatch) 감지 시 동작 (<a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#reference-safety-monitor" target="_blank" class="underline text-blue-400">#reference-safety-monitor</a>)</strong>:<br/>
                 공식 문서상 레퍼런스 <code>har_safety_monitor</code>의 역할은 <em>"Mismatch detection: Logs an error if there is a mismatch between what is expected based on vehicle data and what is visible on screen"</em>으로 명확히 한정되어 있습니다. 즉, Safety Monitor는 화면을 직접 수정하지 않는 <strong>순수 Read-Only 감시 프로세스</strong>로서 픽셀 불일치 발생 시 에러를 기록·보고하는 역할만 수행합니다.
               </li>
             </ul>
@@ -376,19 +365,104 @@
           <div class="flex flex-col items-center justify-center p-2 border border-slate-200 rounded-lg">
             <img src="aosp_toolchain-08.png" alt="No-seatbelt golden image" class="w-24 h-24 object-contain mb-2" />
             <p class="text-xs text-slate-600 text-center font-medium">
-              ▲ ① 추출된 45×45 Golden Image<br/>(<code>#cluster/telltale/no-seatbelt</code>)<br/>흰색/투명 영역은 무시하고 빨간 픽셀만 검사
+              ▲ ① 추출된 45×45 Golden Image (<a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#exported-design-images" target="_blank" class="underline text-blue-600">Figure 8</a>)<br/>(<code>#cluster/telltale/no-seatbelt</code>)<br/>투명 영역은 무시하고 빨간 픽셀만 검사
             </p>
           </div>
           <div class="flex flex-col items-center justify-center p-2 border border-slate-200 rounded-lg">
             <img src="aosp_toolchain-09.png" alt="Full UI with telltale active" class="w-full rounded mb-2" />
             <p class="text-xs text-slate-600 text-center font-medium">
-              ▲ ② 전체 클러스터 화면(1920×720) 중 좌측 하단 <code>(72, 674)</code>의 45×45 영역만 Crop하여 대조
+              ▲ ② 전체 클러스터 화면(1920×720) 중 좌측 하단 <code>(72, 674)</code>의 45×45 영역만 Crop하여 대조 (<a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#exported-design-images" target="_blank" class="underline text-blue-600">Figure 9</a>)
             </p>
           </div>
           <div class="flex flex-col items-center justify-center p-2 border border-slate-200 rounded-lg">
             <img src="aosp_toolchain-10.png" alt="Human readable report" class="w-full max-h-48 object-contain rounded mb-2" />
             <p class="text-xs text-slate-600 text-center font-medium">
-              ▲ ③ 안전 엔지니어 검수용 HTML 리포트<br/>(각 Telltale의 <code>X, Y, Width, Height</code> 명시)
+              ▲ ③ 안전 엔지니어 검수용 HTML 리포트 (<a href="https://source.android.com/docs/automotive/sdv/display-safety/toolchain#safety-approval-tool" target="_blank" class="underline text-blue-600">Figure 10</a>)<br/>(각 Telltale의 <code>X, Y, Width, Height</code> 명시)
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 1.3 (Moved Down to bridge directly into Part 2!): Blending HAR & DriverUI + Heartbeat -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm space-y-6">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="text-lg font-bold">1-3. HAR + DriverUI 화면 합성(Blending)과 Heartbeat 메커니즘</h3>
+          <div class="flex flex-wrap gap-1.5 text-xs">
+            <a href="https://source.android.com/docs/automotive/sdv/display-safety#har-driverui-output" target="_blank" class="px-2.5 py-1 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:underline">
+              🔗 display-safety#har-driverui-output
+            </a>
+            <a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#blend-output" target="_blank" class="px-2.5 py-1 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:underline">
+              🔗 driverui#blend-output
+            </a>
+            <a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#troubleshoot-transparency" target="_blank" class="px-2.5 py-1 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:underline">
+              🔗 driverui#troubleshoot-transparency
+            </a>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-5 border border-[var(--border)]">
+          <img src="aosp_display-safety-05.png" alt="HAR and DriverUI Composition" class="w-full max-w-4xl mx-auto rounded-lg mb-3" />
+          <p class="text-xs text-slate-600 text-center font-medium">
+            ▲ [AOSP 공식 그림] 상단 HAR (SDV VM) + 하단 DriverUI (AAOS IVI VM) → Hypervisor / SoC Display Controller가 하나의 화면으로 합성 (<a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#blend-output" target="_blank" class="underline text-blue-600">Figure 3</a>)
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] space-y-2">
+            <div class="flex items-center justify-between">
+              <h4 class="font-bold text-sm">💓 Heartbeat 기반 투명도(Transparency) 제어</h4>
+              <a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#blend-output" target="_blank" class="text-xs text-blue-400 underline">#blend-output</a>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+              HAR의 하드웨어 디스플레이 플레인은 안전 중요도 때문에 <strong>항상 Android IVI 플레인 위(Top Layer)</strong>에 위치합니다.
+            </p>
+            <ul class="text-xs text-[var(--muted-foreground)] space-y-1.5 list-disc pl-4">
+              <li><strong>정상 상태 (Heartbeat 수신 중)</strong>: DriverUI가 주기적으로 <a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#communication" target="_blank" class="underline text-blue-400"><code>HeartbeatRequest</code> RPC</a>를 보내면, HAR는 플레이스홀더/배경을 제거하고 Android 출력 영역을 <strong>완전 투명(<code>alpha = 0.0</code>)</strong>으로 비워 하단 DriverUI가 투과(See-Through)되게 합니다.</li>
+              <li><strong>장애/부팅 상태 (Heartbeat 끊김)</strong>: DriverUI로부터 Heartbeat가 끊기면 HAR가 즉시 배경 영역을 <strong>불투명(<code>alpha = 1.0</code>)</strong>하게 채우고 자체 안전 UI와 플레이스홀더를 표시합니다.</li>
+            </ul>
+          </div>
+
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] space-y-2">
+            <div class="flex items-center justify-between">
+              <h4 class="font-bold text-sm">🔍 Alpha 합성 및 Cross-VM 주의사항</h4>
+              <a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#troubleshoot-transparency" target="_blank" class="text-xs text-blue-400 underline">#troubleshoot-transparency</a>
+            </div>
+            <ul class="text-xs text-[var(--muted-foreground)] space-y-1.5 list-disc pl-4">
+              <li><strong>Alpha Punch-Through</strong>: HAR가 그리는 게이지/3D 요소는 반드시 <code>alpha = 1.0 (0xFF)</code>이어야 하며, 나머지 영역은 <code>alpha = 0.0</code>으로 클리어되어야 하단 Android 레이어가 보입니다.</li>
+              <li><strong>Cross-VM 디버깅 한계</strong>: HAR(<code>sdv_media_har_cf</code>)와 Android IVI(<code>sdv_ivi_cf_ds</code>)는 서로 다른 Guest VM에서 돌기 때문에, Android에서 <code>adb shell dumpsys SurfaceFlinger</code>를 실행해도 상단 HAR 레이어는 보이지 않습니다.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 1.4 (Bridge to Part 2!): Inter-VM RPC & Live Figma Sync -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm space-y-6">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="text-lg font-bold">1-4. 단일 Figma 문서 동기화(SDVGateway) 및 테마 RPC 연동 (→ 2부 POC 직결)</h3>
+          <div class="flex flex-wrap gap-1.5 text-xs">
+            <a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#design-doc-synch" target="_blank" class="px-2.5 py-1 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:underline">
+              🔗 driverui#design-doc-synch
+            </a>
+            <a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#communication" target="_blank" class="px-2.5 py-1 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:underline">
+              🔗 driverui#communication
+            </a>
+            <a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#live-update" target="_blank" class="px-2.5 py-1 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:underline">
+              🔗 driverui#live-update
+            </a>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+          <div class="bg-white rounded-xl p-4 border border-[var(--border)]">
+            <img src="aosp_driver-ui-04.png" alt="Live update of design document from Figma to DriverUI and HAR" class="w-full rounded-lg mb-2" />
+            <p class="text-xs text-slate-600 text-center font-medium">
+              ▲ [AOSP 공식 그림] Figma Cloud → DriverUI 로컬 <code>.dcf</code> 업데이트 후 <code>SDVGateway</code>를 통해 VM2(HAR)의 로컬 <code>.dcf</code>까지 동시 동기화 (<a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#design-doc-synch" target="_blank" class="underline text-blue-600">Figure 6</a>)
+            </p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-[var(--border)]">
+            <img src="aosp_driver-ui-03.png" alt="RPC communication to change both DriverUI and HAR theme" class="w-full rounded-lg mb-2" />
+            <p class="text-xs text-slate-600 text-center font-medium">
+              ▲ [AOSP 공식 그림] RPC를 통해 DriverUI와 HAR의 테마(Variable Mode)를 동시에 전환 (<a href="https://source.android.com/docs/automotive/sdv/display-safety/driverui#communication" target="_blank" class="underline text-blue-600">Figure 4</a>)
             </p>
           </div>
         </div>
